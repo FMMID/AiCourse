@@ -2,6 +2,7 @@ package com.example.aicourse.presentation.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.aicourse.BuildConfig
 import com.example.aicourse.data.chat.local.InMemoryChatDataSource
 import com.example.aicourse.data.chat.remote.GigaChatDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
@@ -100,7 +101,8 @@ class ChatViewModel(
          * TODO: Заменить на Dependency Injection (Hilt, Koin, и т.д.)
          */
         private fun createChatUseCase(): ChatUseCase {
-            val remoteDataSource = GigaChatDataSource()
+            val authorizationKey = BuildConfig.GIGACHAT_AUTH_KEY
+            val remoteDataSource = GigaChatDataSource(authorizationKey)
             val localDataSource = InMemoryChatDataSource()
             val repository = ChatRepositoryImpl(remoteDataSource, localDataSource)
             return ChatUseCase(repository)
