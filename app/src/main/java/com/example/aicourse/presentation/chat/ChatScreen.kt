@@ -39,8 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.aicourse.domain.model.Message
-import com.example.aicourse.domain.model.MessageType
+import com.example.aicourse.domain.chat.model.Message
+import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)

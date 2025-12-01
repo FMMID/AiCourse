@@ -1,6 +1,6 @@
 package com.example.aicourse.presentation.chat
 
-import com.example.aicourse.domain.model.Message
+import com.example.aicourse.domain.chat.model.Message
 
 data class ChatUiState(
     val messages: List<Message> = emptyList(),

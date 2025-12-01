@@ -1,4 +1,4 @@
-package com.example.aicourse.domain.model
+package com.example.aicourse.domain.chat.model
 
 data class Message(
     val id: String,

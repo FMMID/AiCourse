@@ -2,9 +2,12 @@ package com.example.aicourse.presentation.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.aicourse.domain.model.Message
-import com.example.aicourse.domain.model.MessageType
-import com.example.aicourse.domain.usecase.ChatUseCase
+import com.example.aicourse.data.chat.local.InMemoryChatDataSource
+import com.example.aicourse.data.chat.remote.GigaChatDataSource
+import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
+import com.example.aicourse.domain.chat.model.Message
+import com.example.aicourse.domain.chat.model.MessageType
+import com.example.aicourse.domain.chat.usecase.ChatUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +16,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 class ChatViewModel(
-    private val chatUseCase: ChatUseCase = ChatUseCase()
+    private val chatUseCase: ChatUseCase = createChatUseCase()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -43,39 +46,64 @@ class ChatViewModel(
         }
 
         viewModelScope.launch {
-            try {
-                val botResponse = chatUseCase.sendMessageToBot(text)
-
-                val botMessage = Message(
-                    id = UUID.randomUUID().toString(),
-                    text = botResponse,
-                    type = MessageType.BOT
-                )
-
-                _uiState.update { state ->
-                    state.copy(
-                        messages = state.messages + botMessage,
-                        isLoading = false,
-                        error = null
+            chatUseCase.sendMessageToBot(text)
+                .onSuccess { botResponse ->
+                    val botMessage = Message(
+                        id = UUID.randomUUID().toString(),
+                        text = botResponse,
+                        type = MessageType.BOT
                     )
+
+                    _uiState.update { state ->
+                        state.copy(
+                            messages = state.messages + botMessage,
+                            isLoading = false,
+                            error = null
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                _uiState.update { state ->
-                    state.copy(
-                        isLoading = false,
-                        error = "Ошибка: ${e.message}"
-                    )
+                .onFailure { exception ->
+                    _uiState.update { state ->
+                        state.copy(
+                            isLoading = false,
+                            error = "Ошибка: ${exception.message}"
+                        )
+                    }
                 }
-            }
         }
     }
 
     private fun clearHistory() {
-        _uiState.update { state ->
-            state.copy(
-                messages = emptyList(),
-                error = null
-            )
+        viewModelScope.launch {
+            chatUseCase.clearChatHistory()
+                .onSuccess {
+                    _uiState.update { state ->
+                        state.copy(
+                            messages = emptyList(),
+                            error = null
+                        )
+                    }
+                }
+                .onFailure { exception ->
+                    _uiState.update { state ->
+                        state.copy(
+                            error = "Ошибка очистки истории: ${exception.message}"
+                        )
+                    }
+                }
+        }
+    }
+
+    companion object {
+        /**
+         * Фабричная функция для создания ChatUseCase с зависимостями
+         * TODO: Заменить на Dependency Injection (Hilt, Koin, и т.д.)
+         */
+        private fun createChatUseCase(): ChatUseCase {
+            val remoteDataSource = GigaChatDataSource()
+            val localDataSource = InMemoryChatDataSource()
+            val repository = ChatRepositoryImpl(remoteDataSource, localDataSource)
+            return ChatUseCase(repository)
         }
     }
 }
