@@ -1,3 +1,25 @@
 <resources>
     <string name="app_name">AiCourse</string>
+
+    <!-- Chat Screen -->
+    <string name="chat_title">AI Чат</string>
+    <string name="clear_history">Очистить историю</string>
+    <string name="clear_history_description">Очистить историю чата</string>
+
+    <!-- Message Input -->
+    <string name="message_input_placeholder">Введите сообщение…</string>
+    <string name="send_message">Отправить</string>
+    <string name="send_message_description">Отправить сообщение</string>
+
+    <!-- Error Messages -->
+    <string name="error_prefix">Ошибка: %1$s</string>
+    <string name="error_clear_history">Ошибка очистки истории: %1$s</string>
+
+    <!-- Loading -->
+    <string name="loading_message">Загрузка сообщения…</string>
+
+    <!-- Accessibility -->
+    <string name="user_message_description">Ваше сообщение: %1$s</string>
+    <string name="bot_message_description">Ответ бота: %1$s</string>
+    <string name="message_list_description">Список сообщений чата</string>
 </resources>
