@@ -1,7 +1,10 @@
 package com.example.aicourse.data.chat.repository
 
 import com.example.aicourse.data.chat.local.ChatLocalDataSource
+import com.example.aicourse.data.chat.mapper.SystemPromptMapper
 import com.example.aicourse.data.chat.remote.ChatRemoteDataSource
+import com.example.aicourse.domain.chat.model.BotResponse
+import com.example.aicourse.domain.chat.model.SystemPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,12 +18,14 @@ class ChatRepositoryImpl(
     private val localDataSource: ChatLocalDataSource
 ) : ChatRepository {
 
-    override suspend fun sendMessage(message: String): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun sendMessage(message: String, systemPrompt: SystemPrompt<*>): Result<BotResponse> = withContext(Dispatchers.IO) {
         try {
             localDataSource.saveMessage(message, isUser = true)
-            val response = remoteDataSource.sendMessage(message)
-            localDataSource.saveMessage(response, isUser = false)
-            Result.success(response)
+            val config = SystemPromptMapper.toChatConfig(systemPrompt)
+            val rawResponse = remoteDataSource.sendMessage(message, config)
+            val botResponse = systemPrompt.parseResponse(rawResponse)
+            localDataSource.saveMessage(botResponse.rawContent, isUser = false)
+            Result.success(botResponse)
         } catch (e: Exception) {
             Result.failure(e)
         }

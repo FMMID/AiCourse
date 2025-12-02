@@ -1,5 +1,8 @@
 package com.example.aicourse.domain.chat.usecase
 
+import com.example.aicourse.domain.chat.model.BotResponse
+import com.example.aicourse.domain.chat.model.PlainTextPrompt
+import com.example.aicourse.domain.chat.model.SystemPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 
 /**
@@ -13,6 +16,7 @@ class ChatUseCase(
 
     /**
      * Отправляет сообщение боту через репозиторий
+     * Автоматически определяет подходящий SystemPrompt на основе содержимого сообщения
      * @param message текст сообщения от пользователя
      * @return Result с ответом бота или ошибкой
      */
@@ -21,7 +25,35 @@ class ChatUseCase(
             return Result.failure(IllegalArgumentException("Сообщение не может быть пустым"))
         }
 
-        return chatRepository.sendMessage(message)
+        val systemPrompt = extractSystemPromptFromContent(message)
+        val result = chatRepository.sendMessage(message, systemPrompt)
+
+        return result.map { botResponse ->
+            botResponse.rawContent
+        }
+    }
+
+    /**
+     * Извлекает подходящий SystemPrompt на основе ключевых слов в сообщении
+     * Если совпадений нет, возвращает PlainTextPrompt (дефолтное поведение)
+     *
+     * @param content текст сообщения от пользователя
+     * @return подходящий SystemPrompt (никогда не null, fallback на PlainTextPrompt)
+     */
+    private fun extractSystemPromptFromContent(content: String): SystemPrompt<*> {
+        val lowercaseContent = content.lowercase()
+
+        // TODO: Добавить здесь логику определения специфичных промптов на основе ключевых слов
+        // Пример:
+        // if (lowercaseContent.contains("код") || lowercaseContent.contains("программ")) {
+        //     return CodeGeneratorPrompt()
+        // }
+        // if (lowercaseContent.contains("json") || lowercaseContent.contains("формат")) {
+        //     return JsonOutputPrompt()
+        // }
+
+        // Fallback на дефолтный промпт
+        return PlainTextPrompt()
     }
 
     /**
