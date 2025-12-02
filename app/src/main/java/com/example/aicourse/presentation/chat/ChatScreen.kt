@@ -28,6 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aicourse.R
+import com.example.aicourse.domain.chat.model.plain.PlainTextPrompt
+import com.example.aicourse.presentation.chat.message.MessagesList
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,6 +75,16 @@ fun ChatScreen(
                 .padding(paddingValues)
                 .padding(top = dimensionResource(R.dimen.screen_padding_top))
         ) {
+            if (uiState.activePrompt !is PlainTextPrompt) {
+                ActivePromptIndicator(
+                    activePrompt = uiState.activePrompt,
+                    onReset = { viewModel.handleIntent(ChatIntent.ResetPrompt) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = dimensionResource(R.dimen.spacing_normal))
+                )
+            }
+
             MessagesList(
                 modifier = Modifier
                     .weight(1f)

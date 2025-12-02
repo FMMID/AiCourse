@@ -8,7 +8,7 @@ import com.example.aicourse.data.chat.remote.GigaChatDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.model.PlainTextPrompt
+import com.example.aicourse.domain.chat.model.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.usecase.ChatUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

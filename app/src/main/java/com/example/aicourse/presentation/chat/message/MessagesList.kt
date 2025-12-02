@@ -1,4 +1,4 @@
-package com.example.aicourse.presentation.chat
+package com.example.aicourse.presentation.chat.message
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.layout.Arrangement

@@ -1,4 +1,6 @@
-package com.example.aicourse.domain.chat.model
+package com.example.aicourse.domain.chat.model.json
+
+import com.example.aicourse.domain.chat.model.BotResponse
 
 /**
  * Ответ в формате JSON со структурированными данными

@@ -1,9 +1,8 @@
 package com.example.aicourse.domain.chat.usecase
 
 import com.example.aicourse.domain.chat.model.BotResponse
-import com.example.aicourse.domain.chat.model.JsonOutputPrompt
-import com.example.aicourse.domain.chat.model.PlainTextPrompt
 import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 
 /**

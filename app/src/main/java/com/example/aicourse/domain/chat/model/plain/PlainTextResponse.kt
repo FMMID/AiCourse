@@ -1,4 +1,6 @@
-package com.example.aicourse.domain.chat.model
+package com.example.aicourse.domain.chat.model.plain
+
+import com.example.aicourse.domain.chat.model.BotResponse
 
 /**
  * Ответ для обычного текстового общения

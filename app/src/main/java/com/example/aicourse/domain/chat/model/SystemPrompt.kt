@@ -7,7 +7,7 @@ package com.example.aicourse.domain.chat.model
  *
  * @param R тип ответа, который ожидается от этого промпта
  */
-sealed interface SystemPrompt<out R : BotResponse> {
+interface SystemPrompt<out R : BotResponse> {
     val temperature: Float
     val topP: Float
     val content: String?
