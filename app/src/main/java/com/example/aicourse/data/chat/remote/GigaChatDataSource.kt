@@ -71,20 +71,31 @@ class GigaChatDataSource(
         }
     }
 
-    override suspend fun sendMessage(message: String): String = withContext(Dispatchers.IO) {
+    override suspend fun sendMessage(message: String, config: ChatConfig): String = withContext(Dispatchers.IO) {
         try {
             val token = getValidToken()
-
-            val request = ChatCompletionRequest(
-                model = DEFAULT_MODEL,
-                messages = listOf(
+            val messages = buildList {
+                config.systemContent?.let { systemContent ->
+                    add(
+                        ChatMessage(
+                            role = ChatMessage.ROLE_SYSTEM,
+                            content = systemContent
+                        )
+                    )
+                }
+                add(
                     ChatMessage(
                         role = ChatMessage.ROLE_USER,
                         content = message
                     )
-                ),
-                temperature = 0.7,
-                topP = 0.1,
+                )
+            }
+
+            val request = ChatCompletionRequest(
+                model = DEFAULT_MODEL,
+                messages = messages,
+                temperature = config.temperature.toDouble(),
+                topP = config.topP.toDouble(),
                 maxTokens = 1024
             )
 

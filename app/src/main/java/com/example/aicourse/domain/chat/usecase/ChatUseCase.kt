@@ -1,5 +1,8 @@
 package com.example.aicourse.domain.chat.usecase
 
+import com.example.aicourse.domain.chat.model.BotResponse
+import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 
 /**
@@ -13,15 +16,54 @@ class ChatUseCase(
 
     /**
      * Отправляет сообщение боту через репозиторий
+     * Определяет промпт на основе триггеров или использует текущий активный
      * @param message текст сообщения от пользователя
-     * @return Result с ответом бота или ошибкой
+     * @param currentPrompt текущий активный промпт
+     * @return Result с типизированным ответом и новым промптом
      */
-    suspend fun sendMessageToBot(message: String): Result<String> {
+    suspend fun sendMessageToBot(
+        message: String,
+        currentPrompt: SystemPrompt<*>
+    ): Result<ChatResponse> {
         if (message.isBlank()) {
             return Result.failure(IllegalArgumentException("Сообщение не может быть пустым"))
         }
+        if (isResetCommand(message)) {
+            return Result.failure(IllegalArgumentException("Используйте ResetPrompt intent для сброса"))
+        }
+        val newPrompt = extractSystemPromptFromContent(message) ?: currentPrompt
+        val result = chatRepository.sendMessage(message, newPrompt)
+        return result.map { botResponse ->
+            ChatResponse(
+                botResponse = botResponse,
+                newPrompt = newPrompt
+            )
+        }
+    }
 
-        return chatRepository.sendMessage(message)
+    /**
+     * Проверяет команды сброса промпта
+     */
+    private fun isResetCommand(message: String): Boolean {
+        val lowerMessage = message.trim().lowercase()
+        return lowerMessage == "/reset" || lowerMessage == "/plain"
+    }
+
+    /**
+     * Извлекает подходящий SystemPrompt на основе триггеров в сообщении
+     * Проходит по списку доступных промптов и возвращает первый подошедший
+     *
+     * @param content текст сообщения от пользователя
+     * @return подходящий SystemPrompt или null если триггеров не найдено
+     */
+    private fun extractSystemPromptFromContent(content: String): SystemPrompt<*>? {
+        val availablePrompts = listOf(
+            JsonOutputPrompt()
+        )
+
+        return availablePrompts.firstOrNull { prompt ->
+            prompt.matches(content)
+        }
     }
 
     /**
@@ -38,3 +80,11 @@ class ChatUseCase(
         return chatRepository.getMessageHistory()
     }
 }
+
+/**
+ * Результат отправки сообщения с типизированным ответом и новым промптом
+ */
+data class ChatResponse(
+    val botResponse: BotResponse,
+    val newPrompt: SystemPrompt<*>
+)

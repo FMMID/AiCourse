@@ -8,9 +8,22 @@ interface ChatRemoteDataSource {
 
     /**
      * Отправляет сообщение в API и получает ответ
-     * @param message текст сообщения
+     * @param message текст сообщения от пользователя
+     * @param config конфигурация запроса (temperature, topP, system message)
      * @return ответ от API
      * @throws Exception если произошла ошибка сети или API
      */
-    suspend fun sendMessage(message: String): String
+    suspend fun sendMessage(message: String, config: ChatConfig): String
 }
+
+/**
+ * Конфигурация для запроса к chat API
+ * @param temperature креативность модели (0.0 - 1.0)
+ * @param topP вероятностный отсечение (0.0 - 1.0)
+ * @param systemContent системное сообщение для настройки поведения модели (null = не используется)
+ */
+data class ChatConfig(
+    val temperature: Float = 0.7f,
+    val topP: Float = 0.1f,
+    val systemContent: String? = null
+)

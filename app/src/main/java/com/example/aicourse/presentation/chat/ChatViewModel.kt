@@ -8,6 +8,7 @@ import com.example.aicourse.data.chat.remote.GigaChatDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
+import com.example.aicourse.domain.chat.model.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.usecase.ChatUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,11 +28,17 @@ class ChatViewModel(
         when (intent) {
             is ChatIntent.SendMessage -> sendMessage(intent.text)
             is ChatIntent.ClearHistory -> clearHistory()
+            is ChatIntent.ResetPrompt -> resetPrompt()
         }
     }
 
     private fun sendMessage(text: String) {
         if (text.isBlank()) return
+
+        if (isResetCommand(text)) {
+            resetPrompt()
+            return
+        }
 
         val userMessage = Message(
             id = UUID.randomUUID().toString(),
@@ -47,19 +54,21 @@ class ChatViewModel(
         }
 
         viewModelScope.launch {
-            chatUseCase.sendMessageToBot(text)
-                .onSuccess { botResponse ->
+            chatUseCase.sendMessageToBot(text, _uiState.value.activePrompt)
+                .onSuccess { chatResponse ->
                     val botMessage = Message(
                         id = UUID.randomUUID().toString(),
-                        text = botResponse,
-                        type = MessageType.BOT
+                        text = chatResponse.botResponse.rawContent,
+                        type = MessageType.BOT,
+                        typedResponse = chatResponse.botResponse
                     )
 
                     _uiState.update { state ->
                         state.copy(
                             messages = state.messages + botMessage,
                             isLoading = false,
-                            error = null
+                            error = null,
+                            activePrompt = chatResponse.newPrompt
                         )
                     }
                 }
@@ -74,6 +83,11 @@ class ChatViewModel(
         }
     }
 
+    private fun isResetCommand(text: String): Boolean {
+        val lowerText = text.trim().lowercase()
+        return lowerText == "/reset" || lowerText == "/plain"
+    }
+
     private fun clearHistory() {
         viewModelScope.launch {
             chatUseCase.clearChatHistory()
@@ -81,7 +95,8 @@ class ChatViewModel(
                     _uiState.update { state ->
                         state.copy(
                             messages = emptyList(),
-                            error = null
+                            error = null,
+                            activePrompt = PlainTextPrompt()
                         )
                     }
                 }
@@ -92,6 +107,14 @@ class ChatViewModel(
                         )
                     }
                 }
+        }
+    }
+
+    private fun resetPrompt() {
+        _uiState.update { state ->
+            state.copy(
+                activePrompt = PlainTextPrompt()
+            )
         }
     }
 

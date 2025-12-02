@@ -1,5 +1,8 @@
 package com.example.aicourse.domain.chat.repository
 
+import com.example.aicourse.domain.chat.model.BotResponse
+import com.example.aicourse.domain.chat.model.SystemPrompt
+
 /**
  * Интерфейс репозитория для работы с чатом
  * Определяет контракт взаимодействия с источниками данных (Clean Architecture)
@@ -7,12 +10,13 @@ package com.example.aicourse.domain.chat.repository
 interface ChatRepository {
 
     /**
-     * Отправляет сообщение боту и получает ответ
+     * Отправляет сообщение боту и получает типизированный ответ
      * @param message текст сообщения от пользователя
-     * @return ответ от бота
+     * @param systemPrompt промпт, определяющий поведение модели и тип ответа
+     * @return типизированный ответ от бота
      * @throws Exception если произошла ошибка при отправке/получении
      */
-    suspend fun sendMessage(message: String): Result<String>
+    suspend fun sendMessage(message: String, systemPrompt: SystemPrompt<*>): Result<BotResponse>
 
     /**
      * Получает историю сообщений из локального хранилища (если есть)
