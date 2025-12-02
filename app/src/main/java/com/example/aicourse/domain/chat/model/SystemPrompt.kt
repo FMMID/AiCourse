@@ -1,12 +1,13 @@
 package com.example.aicourse.domain.chat.model
 
 /**
- * Базовый sealed interface для system prompts
+ * Базовый interface для system prompts
  * Каждый промпт определяет параметры для модели и знает, как парсить ответ
  * Каждый промпт также определяет правила своей активации (триггеры)
  *
  * @param R тип ответа, который ожидается от этого промпта
  */
+//TODO добавить параметр maxTokens
 interface SystemPrompt<out R : BotResponse> {
     val temperature: Float
     val topP: Float
