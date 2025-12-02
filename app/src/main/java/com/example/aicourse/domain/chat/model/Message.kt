@@ -1,10 +1,19 @@
 package com.example.aicourse.domain.chat.model
 
+/**
+ * Модель сообщения в чате
+ * @param id уникальный идентификатор
+ * @param text текст сообщения (rawContent для bot messages)
+ * @param type тип сообщения (USER или BOT)
+ * @param timestamp время создания
+ * @param typedResponse типизированный ответ для продвинутого отображения (только для BOT)
+ */
 data class Message(
     val id: String,
     val text: String,
     val type: MessageType,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val typedResponse: BotResponse? = null
 )
 
 enum class MessageType {
