@@ -109,7 +109,7 @@ class GigaChatDataSource(
                 messages = messages,
                 temperature = config.temperature.toDouble(),
                 topP = config.topP.toDouble(),
-                maxTokens = 1024
+                maxTokens = config.maxTokens
             )
 
             val response: ChatCompletionResponse = httpClient.post("$CHAT_API_URL/chat/completions") {

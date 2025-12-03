@@ -1,6 +1,7 @@
 package com.example.aicourse.presentation.chat
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aicourse.BuildConfig
 import com.example.aicourse.data.chat.local.InMemoryChatDataSource
@@ -18,8 +19,9 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 class ChatViewModel(
-    private val chatUseCase: ChatUseCase = createChatUseCase()
-) : ViewModel() {
+    application: Application,
+    private val chatUseCase: ChatUseCase = createChatUseCase(application)
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -127,11 +129,11 @@ class ChatViewModel(
          * Фабричная функция для создания ChatUseCase с зависимостями
          * TODO: Заменить на Dependency Injection (Hilt, Koin, и т.д.)
          */
-        private fun createChatUseCase(): ChatUseCase {
+        private fun createChatUseCase(application: Application): ChatUseCase {
             val authorizationKey = BuildConfig.GIGACHAT_AUTH_KEY
             val remoteDataSource = GigaChatDataSource(authorizationKey)
             val localDataSource = InMemoryChatDataSource()
-            val repository = ChatRepositoryImpl(remoteDataSource, localDataSource)
+            val repository = ChatRepositoryImpl(application, remoteDataSource, localDataSource)
             return ChatUseCase(repository)
         }
     }

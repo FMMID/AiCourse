@@ -27,10 +27,12 @@ interface ChatRemoteDataSource {
  * Конфигурация для запроса к chat API
  * @param temperature креативность модели (0.0 - 1.0)
  * @param topP вероятностный отсечение (0.0 - 1.0)
+ * @param maxTokens максимальное количество токенов в ответе
  * @param systemContent системное сообщение для настройки поведения модели (null = не используется)
  */
 data class ChatConfig(
     val temperature: Float = 0.7f,
     val topP: Float = 0.1f,
+    val maxTokens: Int = 1024,
     val systemContent: String? = null
 )

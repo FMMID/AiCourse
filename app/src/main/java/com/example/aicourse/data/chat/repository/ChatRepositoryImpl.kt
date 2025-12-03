@@ -1,5 +1,6 @@
 package com.example.aicourse.data.chat.repository
 
+import android.content.Context
 import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.mapper.SystemPromptMapper
 import com.example.aicourse.data.chat.remote.ChatRemoteDataSource
@@ -15,6 +16,7 @@ import kotlinx.coroutines.withContext
  * Координирует работу между удаленным API и локальным хранилищем
  */
 class ChatRepositoryImpl(
+    private val context: Context,
     private val remoteDataSource: ChatRemoteDataSource,
     private val localDataSource: ChatLocalDataSource
 ) : ChatRepository {
@@ -26,7 +28,7 @@ class ChatRepositoryImpl(
     ): Result<BotResponse> = withContext(Dispatchers.IO) {
         try {
             localDataSource.saveMessage(message, isUser = true)
-            val config = SystemPromptMapper.toChatConfig(systemPrompt)
+            val config = SystemPromptMapper.toChatConfig(context, systemPrompt)
             val rawResponse = remoteDataSource.sendMessage(message, config, messageHistory)
             val botResponse = systemPrompt.parseResponse(rawResponse)
             localDataSource.saveMessage(botResponse.rawContent, isUser = false)
