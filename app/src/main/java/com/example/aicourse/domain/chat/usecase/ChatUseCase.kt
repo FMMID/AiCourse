@@ -4,6 +4,7 @@ import com.example.aicourse.domain.chat.model.BotResponse
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.SystemPrompt
 import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
+import com.example.aicourse.domain.chat.model.pc.BuildComputerAssistantPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 
 /**
@@ -61,7 +62,8 @@ class ChatUseCase(
      */
     private fun extractSystemPromptFromContent(content: String): SystemPrompt<*>? {
         val availablePrompts = listOf(
-            JsonOutputPrompt()
+            JsonOutputPrompt(),
+            BuildComputerAssistantPrompt()
         )
 
         return availablePrompts.firstOrNull { prompt ->

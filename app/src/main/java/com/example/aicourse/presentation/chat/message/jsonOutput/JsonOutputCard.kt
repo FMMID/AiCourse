@@ -1,4 +1,4 @@
-package com.example.aicourse.presentation.chat.message
+package com.example.aicourse.presentation.chat.message.jsonOutput
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

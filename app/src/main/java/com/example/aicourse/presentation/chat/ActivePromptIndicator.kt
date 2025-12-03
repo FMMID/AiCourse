@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.SystemPrompt
 import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
+import com.example.aicourse.domain.chat.model.pc.BuildComputerAssistantPrompt
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 @Composable
@@ -35,6 +36,7 @@ fun ActivePromptIndicator(
                 Text(
                     text = when (activePrompt) {
                         is JsonOutputPrompt -> "📊 JSON Mode"
+                        is BuildComputerAssistantPrompt -> "🖥️ PC Build Mode"
                         else -> "🤖 Custom Mode"
                     }
                 )
