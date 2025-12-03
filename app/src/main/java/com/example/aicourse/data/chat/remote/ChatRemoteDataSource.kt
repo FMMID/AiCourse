@@ -1,5 +1,7 @@
 package com.example.aicourse.data.chat.remote
 
+import com.example.aicourse.domain.chat.model.Message
+
 /**
  * Интерфейс для удаленного источника данных чата
  * Абстракция над конкретной реализацией API (GigaChat, OpenAI, и т.д.)
@@ -10,10 +12,15 @@ interface ChatRemoteDataSource {
      * Отправляет сообщение в API и получает ответ
      * @param message текст сообщения от пользователя
      * @param config конфигурация запроса (temperature, topP, system message)
+     * @param messageHistory история предыдущих сообщений для контекста
      * @return ответ от API
      * @throws Exception если произошла ошибка сети или API
      */
-    suspend fun sendMessage(message: String, config: ChatConfig): String
+    suspend fun sendMessage(
+        message: String,
+        config: ChatConfig,
+        messageHistory: List<Message> = emptyList()
+    ): String
 }
 
 /**

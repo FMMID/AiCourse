@@ -54,7 +54,11 @@ class ChatViewModel(
         }
 
         viewModelScope.launch {
-            chatUseCase.sendMessageToBot(text, _uiState.value.activePrompt)
+            chatUseCase.sendMessageToBot(
+                message = text,
+                currentPrompt = _uiState.value.activePrompt,
+                messageHistory = _uiState.value.messages
+            )
                 .onSuccess { chatResponse ->
                     val botMessage = Message(
                         id = UUID.randomUUID().toString(),
