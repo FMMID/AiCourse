@@ -16,9 +16,9 @@ import kotlinx.serialization.json.Json
  */
 class BuildComputerAssistantPrompt : SystemPrompt<PcBuildResponse> {
 
-    override val temperature: Float = 0.7f
-    override val topP: Float = 0.3f
-    override val maxTokens: Int = 2048
+    override val temperature: Float = 0.4f
+    override val topP: Float = 0.8f
+    override val maxTokens: Int = 4096
     override val contentResourceId: Int = R.raw.build_computer_assistant_prompt
 
     companion object {
