@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,7 +36,11 @@ import com.example.aicourse.ui.theme.AiCourseTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = viewModel()
+    viewModel: ChatViewModel = viewModel(
+        factory = ChatViewModelFactory(
+            LocalContext.current.applicationContext as android.app.Application
+        )
+    )
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var messageText by remember { mutableStateOf("") }

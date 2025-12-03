@@ -1,5 +1,6 @@
 package com.example.aicourse.domain.chat.model.json
 
+import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.SystemPrompt
 import org.json.JSONException
 import org.json.JSONObject
@@ -15,12 +16,8 @@ import org.json.JSONObject
 data class JsonOutputPrompt(
     override val temperature: Float = 0.5f,
     override val topP: Float = 0.1f,
-    override val content: String = """
-        Ты эксперт в любой области знаний. Я буду задавать тебе вопросы, свои ответы формируй по стандарту JSON.
-        Структура ответа должна быть такая: { "title":"Основная тема ответа", "body":"Основное содержимое ответа" }.
-        Если ты не можешь сформулировать ответ, тогда выводи JSON в таком формате: { "error":"Причина по которой не смог сформулировать JSON" }.
-        Если пользователь предлагает свой вариант вывода учитывай только его, если не предлагает - учитывай предыдущий вариант.
-    """.trimIndent()
+    override val maxTokens: Int = 1024,
+    override val contentResourceId: Int? = R.raw.json_output_prompt
 ) : SystemPrompt<JsonOutputResponse> {
 
     companion object {

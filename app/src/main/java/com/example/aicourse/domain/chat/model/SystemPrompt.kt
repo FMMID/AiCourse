@@ -7,11 +7,11 @@ package com.example.aicourse.domain.chat.model
  *
  * @param R тип ответа, который ожидается от этого промпта
  */
-//TODO добавить параметр maxTokens
 interface SystemPrompt<out R : BotResponse> {
     val temperature: Float
     val topP: Float
-    val content: String?
+    val maxTokens: Int
+    val contentResourceId: Int?
 
     /**
      * Проверяет, должен ли этот промпт активироваться для данного сообщения

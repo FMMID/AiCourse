@@ -1,9 +1,11 @@
 package com.example.aicourse.data.chat.repository
 
+import android.content.Context
 import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.mapper.SystemPromptMapper
 import com.example.aicourse.data.chat.remote.ChatRemoteDataSource
 import com.example.aicourse.domain.chat.model.BotResponse
+import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.SystemPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 import kotlinx.coroutines.Dispatchers
@@ -14,15 +16,20 @@ import kotlinx.coroutines.withContext
  * Координирует работу между удаленным API и локальным хранилищем
  */
 class ChatRepositoryImpl(
+    private val context: Context,
     private val remoteDataSource: ChatRemoteDataSource,
     private val localDataSource: ChatLocalDataSource
 ) : ChatRepository {
 
-    override suspend fun sendMessage(message: String, systemPrompt: SystemPrompt<*>): Result<BotResponse> = withContext(Dispatchers.IO) {
+    override suspend fun sendMessage(
+        message: String,
+        systemPrompt: SystemPrompt<*>,
+        messageHistory: List<Message>
+    ): Result<BotResponse> = withContext(Dispatchers.IO) {
         try {
             localDataSource.saveMessage(message, isUser = true)
-            val config = SystemPromptMapper.toChatConfig(systemPrompt)
-            val rawResponse = remoteDataSource.sendMessage(message, config)
+            val config = SystemPromptMapper.toChatConfig(context, systemPrompt)
+            val rawResponse = remoteDataSource.sendMessage(message, config, messageHistory)
             val botResponse = systemPrompt.parseResponse(rawResponse)
             localDataSource.saveMessage(botResponse.rawContent, isUser = false)
             Result.success(botResponse)

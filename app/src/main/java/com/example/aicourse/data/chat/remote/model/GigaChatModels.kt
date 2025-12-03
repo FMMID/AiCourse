@@ -1,5 +1,6 @@
 package com.example.aicourse.data.chat.remote.model
 
+import com.example.aicourse.domain.chat.model.MessageType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -41,6 +42,13 @@ data class ChatMessage(
         const val ROLE_USER = "user"
         const val ROLE_ASSISTANT = "assistant"
         const val ROLE_SYSTEM = "system"
+
+        fun fromMessageType(messageType: MessageType): String {
+            return when(messageType) {
+                MessageType.USER -> ROLE_USER
+                MessageType.BOT -> ROLE_ASSISTANT
+            }
+        }
     }
 }
 

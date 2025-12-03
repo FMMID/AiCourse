@@ -5,6 +5,8 @@ import com.example.aicourse.data.chat.remote.model.ChatCompletionRequest
 import com.example.aicourse.data.chat.remote.model.ChatCompletionResponse
 import com.example.aicourse.data.chat.remote.model.ChatMessage
 import com.example.aicourse.data.chat.remote.model.TokenResponse
+import com.example.aicourse.domain.chat.model.Message
+import com.example.aicourse.domain.chat.model.MessageType
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
@@ -46,6 +48,7 @@ class GigaChatDataSource(
         private const val CHAT_API_URL = "https://gigachat.devices.sberbank.ru/api/v1"
         private const val DEFAULT_MODEL = "GigaChat"
         private const val SCOPE = "GIGACHAT_API_PERS"
+        private const val MAX_HISTORY_MESSAGES = 40
     }
 
     private var cachedToken: String? = null
@@ -71,9 +74,14 @@ class GigaChatDataSource(
         }
     }
 
-    override suspend fun sendMessage(message: String, config: ChatConfig): String = withContext(Dispatchers.IO) {
+    override suspend fun sendMessage(
+        message: String,
+        config: ChatConfig,
+        messageHistory: List<Message>
+    ): String = withContext(Dispatchers.IO) {
         try {
             val token = getValidToken()
+            val recentHistory = messageHistory.takeLast(MAX_HISTORY_MESSAGES)
             val messages = buildList {
                 config.systemContent?.let { systemContent ->
                     add(
@@ -83,6 +91,11 @@ class GigaChatDataSource(
                         )
                     )
                 }
+
+                recentHistory.forEach { msg ->
+                    add(ChatMessage(role = ChatMessage.fromMessageType(msg.type), content = msg.text))
+                }
+
                 add(
                     ChatMessage(
                         role = ChatMessage.ROLE_USER,
@@ -96,7 +109,7 @@ class GigaChatDataSource(
                 messages = messages,
                 temperature = config.temperature.toDouble(),
                 topP = config.topP.toDouble(),
-                maxTokens = 1024
+                maxTokens = config.maxTokens
             )
 
             val response: ChatCompletionResponse = httpClient.post("$CHAT_API_URL/chat/completions") {
