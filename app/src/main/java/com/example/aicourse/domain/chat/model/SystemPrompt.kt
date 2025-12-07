@@ -26,4 +26,14 @@ interface SystemPrompt<out R : BotResponse> {
      * @return типизированный ответ
      */
     fun parseResponse(rawResponse: String): R
+
+    /**
+     * Обрабатывает входящее сообщение локально (без обращения к API)
+     * Используется для промптов, которым нужна внутренняя логика обработки
+     * (например, переключение режимов, показ справки и т.д.)
+     *
+     * @param message текст сообщения от пользователя
+     * @return локальный ответ если сообщение обработано, null если нужно отправить к API
+     */
+    fun handleMessageLocally(message: String): R? = null
 }

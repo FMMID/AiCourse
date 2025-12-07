@@ -3,6 +3,7 @@ package com.example.aicourse.domain.chat.usecase
 import com.example.aicourse.domain.chat.model.BotResponse
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.model.dynamic.DynamicSystemPrompt
 import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.model.pc.BuildComputerAssistantPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
@@ -35,39 +36,17 @@ class ChatUseCase(
         if (isResetCommand(message)) {
             return Result.failure(IllegalArgumentException("Используйте ResetPrompt intent для сброса"))
         }
-        val newPrompt = extractSystemPromptFromContent(message) ?: currentPrompt
+
+        val newPrompt = extractSystemPromptFromContent(message, currentPrompt) ?: currentPrompt
+        val localResponse = handleMessage(newPrompt, message)
+        if (localResponse != null) return Result.success(localResponse)
+
         val result = chatRepository.sendMessage(message, newPrompt, messageHistory)
         return result.map { botResponse ->
             ChatResponse(
                 botResponse = botResponse,
                 newPrompt = newPrompt
             )
-        }
-    }
-
-    /**
-     * Проверяет команды сброса промпта
-     */
-    private fun isResetCommand(message: String): Boolean {
-        val lowerMessage = message.trim().lowercase()
-        return lowerMessage == "/reset" || lowerMessage == "/plain"
-    }
-
-    /**
-     * Извлекает подходящий SystemPrompt на основе триггеров в сообщении
-     * Проходит по списку доступных промптов и возвращает первый подошедший
-     *
-     * @param content текст сообщения от пользователя
-     * @return подходящий SystemPrompt или null если триггеров не найдено
-     */
-    private fun extractSystemPromptFromContent(content: String): SystemPrompt<*>? {
-        val availablePrompts = listOf(
-            JsonOutputPrompt(),
-            BuildComputerAssistantPrompt()
-        )
-
-        return availablePrompts.firstOrNull { prompt ->
-            prompt.matches(content)
         }
     }
 
@@ -83,6 +62,47 @@ class ChatUseCase(
      */
     suspend fun getMessageHistory(): Result<List<String>> {
         return chatRepository.getMessageHistory()
+    }
+
+    /**
+     * Проверяет команды сброса промпта
+     */
+    private fun isResetCommand(message: String): Boolean {
+        val lowerMessage = message.trim().lowercase()
+        return lowerMessage == "/reset" || lowerMessage == "/plain"
+    }
+
+    /**
+     * Извлекает подходящий SystemPrompt на основе триггеров в сообщении
+     * Проходит по списку доступных промптов и возвращает первый подошедший
+     *
+     * @param content текст сообщения от пользователя
+     * @param currentPrompt активный промпт в рамках текущего чата
+     * @return подходящий SystemPrompt или null если триггеров не найдено
+     */
+    private fun extractSystemPromptFromContent(
+        content: String,
+        currentPrompt: SystemPrompt<*>,
+    ): SystemPrompt<*>? {
+        val availablePrompts = listOf(
+            JsonOutputPrompt(),
+            BuildComputerAssistantPrompt(),
+            DynamicSystemPrompt(currentPrompt),
+        )
+
+        return availablePrompts.firstOrNull { prompt ->
+            prompt.matches(content)
+        }
+    }
+
+    private fun handleMessage(activePrompt: SystemPrompt<*>, message: String): ChatResponse? {
+        val localResponse = activePrompt.handleMessageLocally(message)
+        return localResponse?.let {
+            ChatResponse(
+                botResponse = it,
+                newPrompt = activePrompt
+            )
+        }
     }
 }
 
