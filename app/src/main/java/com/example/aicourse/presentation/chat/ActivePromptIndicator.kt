@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.SystemPrompt
 import com.example.aicourse.domain.chat.model.dynamic.DynamicSystemPrompt
+import com.example.aicourse.domain.chat.model.dynamicTemperature.DynamicTemperaturePrompt
 import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.model.pc.BuildComputerAssistantPrompt
 import com.example.aicourse.ui.theme.AiCourseTheme
@@ -38,6 +39,10 @@ fun ActivePromptIndicator(
                     text = when (activePrompt) {
                         is JsonOutputPrompt -> "📊 JSON Mode"
                         is BuildComputerAssistantPrompt -> "🖥️ PC Build Mode"
+                        is DynamicTemperaturePrompt -> {
+                            val temp = activePrompt.temperature
+                            "🌡️ DT Mode | Temp: $temp"
+                        }
                         is DynamicSystemPrompt -> {
                             val activeName = activePrompt.getActivePromptName()
                             if (activeName != null) {

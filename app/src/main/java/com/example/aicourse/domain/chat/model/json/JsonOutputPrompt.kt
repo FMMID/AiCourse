@@ -21,7 +21,8 @@ data class JsonOutputPrompt(
 ) : SystemPrompt<JsonOutputResponse> {
 
     companion object {
-        private val PREFIXES = listOf("JSON:", "/json ", "/JSON ")
+        private val COMMAND_TRIGGERS = listOf("/json")
+        private val PREFIX_TRIGGERS = listOf("JSON:")
 
         private val PATTERNS = listOf(
             Regex("ответь\\s+в\\s+(формате\\s+)?json", RegexOption.IGNORE_CASE),
@@ -34,13 +35,24 @@ data class JsonOutputPrompt(
 
     /**
      * Проверяет триггеры активации промпта
-     * Срабатывает на префиксы (JSON:, /json) или ключевые фразы
+     * Срабатывает на команды (/json), префиксы (JSON:) или ключевые фразы
      */
     override fun matches(message: String): Boolean {
-        if (PREFIXES.any { prefix -> message.startsWith(prefix, ignoreCase = true) }) {
+        val lowerMessage = message.trim().lowercase()
+
+        // Проверка команд: точное совпадение или с пробелом после
+        if (COMMAND_TRIGGERS.any { trigger ->
+            lowerMessage == trigger || lowerMessage.startsWith("$trigger ")
+        }) {
             return true
         }
 
+        // Проверка префиксов (JSON:)
+        if (PREFIX_TRIGGERS.any { prefix -> message.startsWith(prefix, ignoreCase = true) }) {
+            return true
+        }
+
+        // Проверка ключевых фраз
         return PATTERNS.any { pattern -> pattern.containsMatchIn(message) }
     }
 

@@ -4,6 +4,7 @@ import com.example.aicourse.domain.chat.model.BotResponse
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.SystemPrompt
 import com.example.aicourse.domain.chat.model.dynamic.DynamicSystemPrompt
+import com.example.aicourse.domain.chat.model.dynamicTemperature.DynamicTemperaturePrompt
 import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.model.pc.BuildComputerAssistantPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
@@ -41,7 +42,10 @@ class ChatUseCase(
         val localResponse = handleMessage(newPrompt, message)
         if (localResponse != null) return Result.success(localResponse)
 
-        val result = chatRepository.sendMessage(message, newPrompt, messageHistory)
+        val cleanedMessage = prepareMessageForSending(newPrompt, message)
+        val historyToSend = prepareHistoryForSending(newPrompt, messageHistory)
+
+        val result = chatRepository.sendMessage(cleanedMessage, newPrompt, historyToSend)
         return result.map { botResponse ->
             ChatResponse(
                 botResponse = botResponse,
@@ -88,6 +92,7 @@ class ChatUseCase(
             JsonOutputPrompt(),
             BuildComputerAssistantPrompt(),
             DynamicSystemPrompt(currentPrompt),
+            DynamicTemperaturePrompt(currentPrompt),
         )
 
         return availablePrompts.firstOrNull { prompt ->
@@ -102,6 +107,41 @@ class ChatUseCase(
                 botResponse = it,
                 newPrompt = activePrompt
             )
+        }
+    }
+
+    /**
+     * Формирует сообщение для отправки к API на основе активного промпта
+     * Некоторые промпты могут изменять сообщение перед отправкой
+     *
+     * @param prompt активный системный промпт
+     * @param message исходное сообщение пользователя
+     * @return обработанное сообщение для отправки
+     */
+    private fun prepareMessageForSending(prompt: SystemPrompt<*>, message: String): String {
+        return when (prompt) {
+            is DynamicTemperaturePrompt -> {
+               prompt.extractAndCleanMessage(message)
+            }
+            else -> message
+        }
+    }
+
+    /**
+     * Формирует историю сообщений для отправки к API на основе активного промпта
+     * Некоторые промпты могут не использовать историю
+     *
+     * @param prompt активный системный промпт
+     * @param messageHistory полная история сообщений
+     * @return история для отправки (может быть пустой для некоторых промптов)
+     */
+    private fun prepareHistoryForSending(
+        prompt: SystemPrompt<*>,
+        messageHistory: List<Message>
+    ): List<Message> {
+        return when (prompt) {
+            is DynamicTemperaturePrompt -> emptyList()
+            else -> messageHistory
         }
     }
 }
