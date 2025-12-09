@@ -28,6 +28,11 @@ android {
             "GIGACHAT_AUTH_KEY",
             "\"${localProps.getProperty("GIGACHAT_AUTH_KEY")}\""
         )
+        buildConfigField(
+            "String",
+            "HUGGING_FACE_AUTH_KEY",
+            "\"${localProps.getProperty("HUGGING_FACE_AUTH_KEY", "")}\""
+        )
     }
 
     buildTypes {

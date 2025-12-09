@@ -5,7 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aicourse.BuildConfig
 import com.example.aicourse.data.chat.local.InMemoryChatDataSource
-import com.example.aicourse.data.chat.remote.GigaChatDataSource
+import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
