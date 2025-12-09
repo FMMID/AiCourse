@@ -1,5 +1,6 @@
 package com.example.aicourse.data.chat.remote
 
+import com.example.aicourse.domain.chat.model.ChatResponse
 import com.example.aicourse.domain.chat.model.Message
 
 /**
@@ -13,14 +14,14 @@ interface ChatRemoteDataSource {
      * @param message текст сообщения от пользователя
      * @param config конфигурация запроса (temperature, topP, system message)
      * @param messageHistory история предыдущих сообщений для контекста
-     * @return ответ от API
+     * @return ответ от API с метаданными о токенах
      * @throws Exception если произошла ошибка сети или API
      */
     suspend fun sendMessage(
         message: String,
         config: ChatConfig,
         messageHistory: List<Message> = emptyList()
-    ): String
+    ): ChatResponse
 }
 
 /**

@@ -6,6 +6,7 @@ import com.example.aicourse.data.chat.remote.ChatConfig
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionRequest
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionResponse
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatMessage
+import com.example.aicourse.domain.chat.model.ChatResponse
 import com.example.aicourse.domain.chat.model.Message
 import io.ktor.client.call.body
 import io.ktor.client.request.header
@@ -40,7 +41,7 @@ class HuggingFaceDataSource(
         message: String,
         config: ChatConfig,
         messageHistory: List<Message>
-    ): String = withContext(Dispatchers.IO) {
+    ): ChatResponse = withContext(Dispatchers.IO) {
         try {
             val recentHistory = messageHistory.takeLast(MAX_HISTORY_MESSAGES)
             val messages = buildList {
@@ -94,7 +95,14 @@ class HuggingFaceDataSource(
                 ?: throw Exception("Пустой ответ от HuggingFace API")
 
             Log.d(logTag, "Received response from HuggingFace API")
-            content
+
+            // Извлекаем статистику токенов из usage (может быть null)
+            ChatResponse(
+                content = content,
+                promptTokens = response.usage?.promptTokens,
+                completionTokens = response.usage?.completionTokens,
+                totalTokens = response.usage?.totalTokens
+            )
 
         } catch (e: Exception) {
             Log.e(logTag, "Error sending message to HuggingFace", e)

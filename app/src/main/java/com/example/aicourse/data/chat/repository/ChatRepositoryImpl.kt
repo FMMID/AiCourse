@@ -30,7 +30,7 @@ class ChatRepositoryImpl(
             localDataSource.saveMessage(message, isUser = true)
             val config = SystemPromptMapper.toChatConfig(context, systemPrompt)
             val rawResponse = remoteDataSource.sendMessage(message, config, messageHistory)
-            val botResponse = systemPrompt.parseResponse(rawResponse)
+            val botResponse = systemPrompt.parseResponse(rawResponse.content)
             localDataSource.saveMessage(botResponse.rawContent, isUser = false)
             Result.success(botResponse)
         } catch (e: Exception) {
