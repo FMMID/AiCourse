@@ -70,6 +70,8 @@ class DynamicSystemPrompt(
      *
      * 2. Если currentSystemPrompt !is DynamicSystemPrompt (не в динамическом режиме):
      *    - Если ACTIVATION_TRIGGERS (/dynamic, /expert) -> возвращаем true (активация)
+     *    - Проверка: триггер должен быть либо точным совпадением, либо с пробелом после
+     *    - Это предотвращает срабатывание на /dynamic_temp и подобные команды
      *    - Иначе -> возвращаем false
      */
     override fun matches(message: String): Boolean {
@@ -85,7 +87,7 @@ class DynamicSystemPrompt(
             }
         } else {
             ACTIVATION_TRIGGERS.any { trigger ->
-                lowerMessage.startsWith(trigger)
+                lowerMessage == trigger || lowerMessage.startsWith("$trigger ")
             }
         }
     }

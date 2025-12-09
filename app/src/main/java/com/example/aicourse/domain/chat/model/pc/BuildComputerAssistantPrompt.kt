@@ -44,7 +44,10 @@ class BuildComputerAssistantPrompt : SystemPrompt<PcBuildResponse> {
     override fun matches(message: String): Boolean {
         val lowerMessage = message.trim().lowercase()
 
-        if (COMMAND_TRIGGERS.any { lowerMessage.startsWith(it) }) {
+        // Проверка команд: точное совпадение или с пробелом после
+        if (COMMAND_TRIGGERS.any { trigger ->
+            lowerMessage == trigger || lowerMessage.startsWith("$trigger ")
+        }) {
             return true
         }
 
