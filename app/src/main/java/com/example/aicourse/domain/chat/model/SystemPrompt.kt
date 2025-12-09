@@ -12,6 +12,8 @@ interface SystemPrompt<out R : BotResponse> {
     val topP: Float
     val maxTokens: Int
     val contentResourceId: Int?
+    val modelType: ModelType?
+        get() = null // По умолчанию используется модель провайдера по умолчанию
 
     /**
      * Проверяет, должен ли этот промпт активироваться для данного сообщения

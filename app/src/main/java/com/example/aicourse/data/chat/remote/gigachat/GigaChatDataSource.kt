@@ -9,6 +9,7 @@ import com.example.aicourse.data.chat.remote.gigachat.model.ChatMessage
 import com.example.aicourse.data.chat.remote.gigachat.model.TokenResponse
 import com.example.aicourse.domain.chat.model.ChatResponse
 import com.example.aicourse.domain.chat.model.Message
+import com.example.aicourse.domain.chat.model.ModelType
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.header
@@ -50,6 +51,19 @@ class GigaChatDataSource(
     private var tokenExpiresAt: Long = 0
     private val tokenMutex = Mutex()
 
+    /**
+     * Резолвит тип модели в конкретный идентификатор модели GigaChat
+     * Примечание: GigaChat может иметь разные модели (GigaChat, GigaChat-Plus, GigaChat-Pro)
+     * На данный момент используем одну модель для всех типов
+     */
+    override fun resolveModel(modelType: ModelType): String {
+        return when (modelType) {
+            ModelType.FAST -> "GigaChat" // Быстрая модель
+            ModelType.BALANCED -> "GigaChat-Pro" // Сбалансированная (пока та же)
+            ModelType.POWERFUL -> "GigaChat-Max" // Мощная (можно использовать GigaChat-Pro если доступна)
+        }
+    }
+
     override suspend fun sendMessage(
         message: String,
         config: ChatConfig,
@@ -81,7 +95,7 @@ class GigaChatDataSource(
             }
 
             val request = ChatCompletionRequest(
-                model = DEFAULT_MODEL,
+                model = config.model ?: DEFAULT_MODEL,
                 messages = messages,
                 temperature = config.temperature.toDouble(),
                 topP = config.topP.toDouble(),
@@ -102,7 +116,8 @@ class GigaChatDataSource(
                 content = content,
                 promptTokens = response.usage?.promptTokens,
                 completionTokens = response.usage?.completionTokens,
-                totalTokens = response.usage?.totalTokens
+                totalTokens = response.usage?.totalTokens,
+                modelName = response.model
             )
         } catch (e: Exception) {
             Log.e(logTag, "Error sending message to GigaChat", e)

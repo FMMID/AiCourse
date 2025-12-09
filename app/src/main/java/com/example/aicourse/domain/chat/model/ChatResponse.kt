@@ -8,10 +8,12 @@ package com.example.aicourse.domain.chat.model
  * @property promptTokens количество токенов в запросе (null если не предоставлено API)
  * @property completionTokens количество токенов в ответе (null если не предоставлено API)
  * @property totalTokens общее количество токенов (null если не предоставлено API)
+ * @property modelName имя использованной модели (null если не установлено, напр. использовалась модель по умолчанию)
  */
 data class ChatResponse(
     val content: String,
     val promptTokens: Int? = null,
     val completionTokens: Int? = null,
-    val totalTokens: Int? = null
+    val totalTokens: Int? = null,
+    val modelName: String? = null
 )

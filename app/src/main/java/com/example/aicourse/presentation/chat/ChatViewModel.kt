@@ -74,7 +74,9 @@ class ChatViewModel(
                             messages = state.messages + botMessage,
                             isLoading = false,
                             error = null,
-                            activePrompt = chatResponse.newPrompt
+                            activePrompt = chatResponse.newPrompt,
+                            lastTokenUsage = chatResponse.tokenUsage,
+                            lastModelName = chatResponse.modelName
                         )
                     }
                 }

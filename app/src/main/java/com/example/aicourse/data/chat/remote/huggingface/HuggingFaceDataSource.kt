@@ -8,6 +8,7 @@ import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionR
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatMessage
 import com.example.aicourse.domain.chat.model.ChatResponse
 import com.example.aicourse.domain.chat.model.Message
+import com.example.aicourse.domain.chat.model.ModelType
 import io.ktor.client.call.body
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -36,6 +37,18 @@ class HuggingFaceDataSource(
     }
 
     override val logTag: String = "HuggingFaceDataSource"
+
+    /**
+     * Резолвит тип модели в конкретный идентификатор модели HuggingFace
+     * Используются модели доступные через HuggingFace Router API
+     */
+    override fun resolveModel(modelType: ModelType): String {
+        return when (modelType) {
+            ModelType.FAST -> "openai/gpt-oss-20b:hyperbolic" // Быстрая модель (по умолчанию)
+            ModelType.BALANCED -> "meta-llama/Llama-3.1-70B-Instruct" // Сбалансированная
+            ModelType.POWERFUL -> "meta-llama/Llama-3.3-70B-Instruct" // Мощная модель
+        }
+    }
 
     override suspend fun sendMessage(
         message: String,
@@ -75,7 +88,7 @@ class HuggingFaceDataSource(
             }
 
             val request = HfChatCompletionRequest(
-                model = DEFAULT_MODEL,
+                model = config.model ?: DEFAULT_MODEL,
                 messages = messages,
                 temperature = config.temperature.toDouble(),
                 topP = config.topP.toDouble(),
@@ -101,7 +114,8 @@ class HuggingFaceDataSource(
                 content = content,
                 promptTokens = response.usage?.promptTokens,
                 completionTokens = response.usage?.completionTokens,
-                totalTokens = response.usage?.totalTokens
+                totalTokens = response.usage?.totalTokens,
+                modelName = response.model
             )
 
         } catch (e: Exception) {

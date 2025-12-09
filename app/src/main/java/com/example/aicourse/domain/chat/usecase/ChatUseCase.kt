@@ -3,7 +3,9 @@ package com.example.aicourse.domain.chat.usecase
 import com.example.aicourse.domain.chat.model.BotResponse
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.model.TokenUsage
 import com.example.aicourse.domain.chat.model.dynamic.DynamicSystemPrompt
+import com.example.aicourse.domain.chat.model.dynamicModel.DynamicModelPrompt
 import com.example.aicourse.domain.chat.model.dynamicTemperature.DynamicTemperaturePrompt
 import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.model.pc.BuildComputerAssistantPrompt
@@ -46,10 +48,12 @@ class ChatUseCase(
         val historyToSend = prepareHistoryForSending(newPrompt, messageHistory)
 
         val result = chatRepository.sendMessage(cleanedMessage, newPrompt, historyToSend)
-        return result.map { botResponse ->
+        return result.map { sendMessageResult ->
             ChatResponse(
-                botResponse = botResponse,
-                newPrompt = newPrompt
+                botResponse = sendMessageResult.botResponse,
+                newPrompt = newPrompt,
+                tokenUsage = sendMessageResult.tokenUsage,
+                modelName = sendMessageResult.modelName
             )
         }
     }
@@ -93,6 +97,7 @@ class ChatUseCase(
             BuildComputerAssistantPrompt(),
             DynamicSystemPrompt(currentPrompt),
             DynamicTemperaturePrompt(currentPrompt),
+            DynamicModelPrompt(currentPrompt),
         )
 
         return availablePrompts.firstOrNull { prompt ->
@@ -123,6 +128,9 @@ class ChatUseCase(
             is DynamicTemperaturePrompt -> {
                prompt.extractAndCleanMessage(message)
             }
+            is DynamicModelPrompt -> {
+               prompt.extractAndCleanMessage(message)
+            }
             else -> message
         }
     }
@@ -140,7 +148,7 @@ class ChatUseCase(
         messageHistory: List<Message>
     ): List<Message> {
         return when (prompt) {
-            is DynamicTemperaturePrompt -> emptyList()
+            is DynamicTemperaturePrompt, is DynamicModelPrompt-> emptyList()
             else -> messageHistory
         }
     }
@@ -148,8 +156,14 @@ class ChatUseCase(
 
 /**
  * Результат отправки сообщения с типизированным ответом и новым промптом
+ * @property botResponse типизированный ответ бота
+ * @property newPrompt активный промпт после обработки сообщения
+ * @property tokenUsage статистика использования токенов (null если не предоставлено)
+ * @property modelName имя использованной модели (null если не установлено)
  */
 data class ChatResponse(
     val botResponse: BotResponse,
-    val newPrompt: SystemPrompt<*>
+    val newPrompt: SystemPrompt<*>,
+    val tokenUsage: TokenUsage? = null,
+    val modelName: String? = null
 )

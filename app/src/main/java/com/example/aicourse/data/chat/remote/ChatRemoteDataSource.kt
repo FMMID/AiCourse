@@ -2,6 +2,7 @@ package com.example.aicourse.data.chat.remote
 
 import com.example.aicourse.domain.chat.model.ChatResponse
 import com.example.aicourse.domain.chat.model.Message
+import com.example.aicourse.domain.chat.model.ModelType
 
 /**
  * Интерфейс для удаленного источника данных чата
@@ -22,6 +23,13 @@ interface ChatRemoteDataSource {
         config: ChatConfig,
         messageHistory: List<Message> = emptyList()
     ): ChatResponse
+
+    /**
+     * Резолвит тип модели в конкретный идентификатор модели для данного провайдера
+     * @param modelType тип модели (FAST, BALANCED, POWERFUL)
+     * @return конкретный идентификатор модели провайдера
+     */
+    fun resolveModel(modelType: ModelType): String
 }
 
 /**
@@ -30,10 +38,12 @@ interface ChatRemoteDataSource {
  * @param topP вероятностный отсечение (0.0 - 1.0)
  * @param maxTokens максимальное количество токенов в ответе
  * @param systemContent системное сообщение для настройки поведения модели (null = не используется)
+ * @param model конкретный идентификатор модели провайдера (null = используется модель по умолчанию)
  */
 data class ChatConfig(
     val temperature: Float = 0.7f,
     val topP: Float = 0.1f,
     val maxTokens: Int = 1024,
-    val systemContent: String? = null
+    val systemContent: String? = null,
+    val model: String? = null
 )
