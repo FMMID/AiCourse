@@ -5,8 +5,8 @@ import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.mapper.SystemPromptMapper
 import com.example.aicourse.data.chat.remote.ChatRemoteDataSource
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.model.TokenUsage
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 import com.example.aicourse.domain.chat.repository.SendMessageResult
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +41,8 @@ class ChatRepositoryImpl(
                 tokenUsage = TokenUsage(
                     promptTokens = rawResponse.promptTokens,
                     completionTokens = rawResponse.completionTokens,
-                    totalTokens = rawResponse.totalTokens
+                    totalTokens = rawResponse.totalTokens,
+                    maxAvailableTokens = systemPrompt.maxTokens
                 ),
                 modelName = rawResponse.modelName ?: resolvedModel
             )

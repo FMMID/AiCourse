@@ -69,10 +69,10 @@ fun MessageItem(
             }
         }
 
-        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.totalTokens != null) {
+        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.maxAvailableTokens != null) {
             TokenStatisticsCard(
                 tokenUsage = message.tokenUsage,
-                contextLimit = message.tokenUsage.totalTokens,
+                contextLimit = message.tokenUsage.maxAvailableTokens,
                 diff = message.tokenUsageDiff ?: TokenUsageDiff(),
                 modifier = Modifier
                     .fillMaxWidth()

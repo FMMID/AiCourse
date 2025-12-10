@@ -9,7 +9,7 @@ class SettingsChatUseCase {
     //TODO пока храним в рантайме, как добавиться localStorage - перенесем туда
     private var activeSettingsChatModel: SettingsChatModel = SettingsChatModel(
         currentUseApiImplementation = ApiImplementation.GIGA_CHAT,
-        isUseMessageHistory = true,
+        isUseMessageHistory = false,
         calculateTokenCost = true
     )
 
