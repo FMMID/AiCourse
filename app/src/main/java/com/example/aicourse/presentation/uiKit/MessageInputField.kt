@@ -1,4 +1,4 @@
-package com.example.aicourse.presentation.chat
+package com.example.aicourse.presentation.uiKit
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -71,7 +71,7 @@ fun MessageInputField(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun MessageInputFieldPreview() {
     AiCourseTheme {

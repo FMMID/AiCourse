@@ -1,11 +1,9 @@
 package com.example.aicourse.presentation.chat
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aicourse.BuildConfig
 import com.example.aicourse.data.chat.local.InMemoryChatDataSource
-import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
 import com.example.aicourse.data.chat.remote.huggingface.HuggingFaceDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
 import com.example.aicourse.domain.chat.model.Message
@@ -13,9 +11,7 @@ import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.model.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.usecase.ChatUseCase
 import com.example.aicourse.domain.chat.util.TokenStatisticsCalculator
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.example.aicourse.presentation.base.BaseViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -23,12 +19,9 @@ import java.util.UUID
 class ChatViewModel(
     application: Application,
     private val chatUseCase: ChatUseCase = createChatUseCase(application)
-) : AndroidViewModel(application) {
+) : BaseViewModel<ChatUiState, ChatIntent>(application, ChatUiState()) {
 
-    private val _uiState = MutableStateFlow(ChatUiState())
-    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
-
-    fun handleIntent(intent: ChatIntent) {
+    override fun handleIntent(intent: ChatIntent) {
         when (intent) {
             is ChatIntent.SendMessage -> sendMessage(intent.text)
             is ChatIntent.ClearHistory -> clearHistory()

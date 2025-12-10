@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.plain.PlainTextPrompt
 import com.example.aicourse.presentation.chat.message.MessagesList
+import com.example.aicourse.presentation.uiKit.MessageInputField
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
