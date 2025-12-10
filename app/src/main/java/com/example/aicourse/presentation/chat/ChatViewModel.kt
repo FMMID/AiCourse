@@ -12,6 +12,7 @@ import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.model.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.usecase.ChatUseCase
+import com.example.aicourse.domain.chat.util.TokenStatisticsCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,11 +64,23 @@ class ChatViewModel(
                 messageHistory = _uiState.value.messages
             )
                 .onSuccess { chatResponse ->
+                    val previousBotMessage = _uiState.value.messages
+                        .asReversed()
+                        .firstOrNull { it.type == MessageType.BOT && it.tokenUsage?.hasData() == true }
+
+                    val diff = TokenStatisticsCalculator.calculateDiff(
+                        chatResponse.tokenUsage,
+                        previousBotMessage
+                    )
+
                     val botMessage = Message(
                         id = UUID.randomUUID().toString(),
                         text = chatResponse.botResponse.rawContent,
                         type = MessageType.BOT,
-                        typedResponse = chatResponse.botResponse
+                        typedResponse = chatResponse.botResponse,
+                        tokenUsage = chatResponse.tokenUsage,
+                        contextLimit = chatResponse.newPrompt.maxTokens,
+                        tokenUsageDiff = diff
                     )
 
                     _uiState.update { state ->

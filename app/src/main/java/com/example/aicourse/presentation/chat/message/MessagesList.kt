@@ -40,7 +40,7 @@ fun MessagesList(
     ) {
         items(
             items = messages,
-            key = { it.id }
+            key = { message -> message.id }
         ) { message ->
             MessageItem(message = message)
         }
