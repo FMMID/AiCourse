@@ -15,49 +15,73 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.model.json.JsonOutputResponse
-import com.example.aicourse.domain.chat.model.pc.PcBuildResponse
+import com.example.aicourse.domain.chat.model.TokenUsageDiff
+import com.example.aicourse.domain.chat.promt.json.JsonOutputResponse
+import com.example.aicourse.domain.chat.promt.pc.PcBuildResponse
 import com.example.aicourse.presentation.chat.message.jsonOutput.JsonOutputCard
 import com.example.aicourse.presentation.chat.message.pcBuild.PcBuildCard
 import com.example.aicourse.presentation.chat.message.plainText.PlainTextCard
+import com.example.aicourse.presentation.chat.message.tokenStats.TokenStatisticsCard
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 @Composable
-fun MessageItem(message: Message) {
+fun MessageItem(
+    message: Message,
+    modifier: Modifier = Modifier
+) {
     val isUser = message.type == MessageType.USER
     val semanticDescription = stringResource(
         if (isUser) R.string.user_message_description else R.string.bot_message_description,
         message.text
     )
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = dimensionResource(R.dimen.message_item_padding_horizontal),
-                vertical = dimensionResource(R.dimen.message_item_padding_vertical)
-            )
-            .semantics {
-                contentDescription = semanticDescription
-            },
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+    Column(
+        modifier = modifier.fillMaxWidth()
     ) {
-        val typedResponse = message.typedResponse
-        when {
-            !isUser && typedResponse is JsonOutputResponse -> {
-                JsonOutputCard(response = typedResponse)
-            }
-
-            !isUser && typedResponse is PcBuildResponse -> {
-                PcBuildCard(response = typedResponse)
-            }
-
-            else -> {
-                PlainTextCard(
-                    text = message.text,
-                    isUser = isUser
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = dimensionResource(R.dimen.message_item_padding_horizontal),
+                    vertical = dimensionResource(R.dimen.message_item_padding_vertical)
                 )
+                .semantics {
+                    contentDescription = semanticDescription
+                },
+            horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+        ) {
+            val typedResponse = message.typedResponse
+            when {
+                !isUser && typedResponse is JsonOutputResponse -> {
+                    JsonOutputCard(response = typedResponse)
+                }
+
+                !isUser && typedResponse is PcBuildResponse -> {
+                    PcBuildCard(response = typedResponse)
+                }
+
+                else -> {
+                    PlainTextCard(
+                        text = message.text,
+                        isUser = isUser
+                    )
+                }
             }
+        }
+
+        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.maxAvailableTokens != null) {
+            TokenStatisticsCard(
+                tokenUsage = message.tokenUsage,
+                contextLimit = message.tokenUsage.maxAvailableTokens,
+                diff = message.tokenUsageDiff ?: TokenUsageDiff(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = dimensionResource(R.dimen.message_item_padding_horizontal),
+                        end = dimensionResource(R.dimen.message_item_padding_horizontal),
+                        bottom = dimensionResource(R.dimen.message_item_padding_vertical)
+                    )
+            )
         }
     }
 }

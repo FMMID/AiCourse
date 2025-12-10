@@ -12,6 +12,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            /**
+             * TODO Добавить систему навигации, реализовать навигацию между ChatScreen -> SettingsScreen
+             * TODO Начальный экран при входе в приложение - ChatScreen
+             */
             AiCourseTheme {
                 ChatScreen()
             }

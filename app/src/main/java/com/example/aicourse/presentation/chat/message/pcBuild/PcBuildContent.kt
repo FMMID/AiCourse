@@ -1,6 +1,5 @@
 package com.example.aicourse.presentation.chat.message.pcBuild
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,9 +15,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.aicourse.domain.chat.model.pc.PcBuild
-import com.example.aicourse.domain.chat.model.pc.PcComponent
-import com.example.aicourse.domain.chat.model.pc.PcComponents
+import com.example.aicourse.domain.chat.promt.pc.PcBuild
+import com.example.aicourse.domain.chat.promt.pc.PcComponent
+import com.example.aicourse.domain.chat.promt.pc.PcComponents
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 /**

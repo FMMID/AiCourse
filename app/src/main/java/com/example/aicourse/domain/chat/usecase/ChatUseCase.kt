@@ -1,15 +1,19 @@
 package com.example.aicourse.domain.chat.usecase
 
-import com.example.aicourse.domain.chat.model.BotResponse
+import com.example.aicourse.domain.chat.model.ComplexBotMessage
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.SystemPrompt
-import com.example.aicourse.domain.chat.model.TokenUsage
-import com.example.aicourse.domain.chat.model.dynamic.DynamicSystemPrompt
-import com.example.aicourse.domain.chat.model.dynamicModel.DynamicModelPrompt
-import com.example.aicourse.domain.chat.model.dynamicTemperature.DynamicTemperaturePrompt
-import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
-import com.example.aicourse.domain.chat.model.pc.BuildComputerAssistantPrompt
+import com.example.aicourse.domain.chat.model.MessageType
+import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.domain.chat.promt.dynamicModel.DynamicModelPrompt
+import com.example.aicourse.domain.chat.promt.dynamicSystemPrompt.DynamicSystemPrompt
+import com.example.aicourse.domain.chat.promt.dynamicTemperature.DynamicTemperaturePrompt
+import com.example.aicourse.domain.chat.promt.json.JsonOutputPrompt
+import com.example.aicourse.domain.chat.promt.pc.BuildComputerAssistantPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
+import com.example.aicourse.domain.chat.repository.SendMessageResult
+import com.example.aicourse.domain.chat.util.TokenStatisticsCalculator
+import com.example.aicourse.domain.settings.model.SettingsChatModel
+import java.util.UUID
 
 /**
  * Use Case для работы с чатом
@@ -31,8 +35,10 @@ class ChatUseCase(
     suspend fun sendMessageToBot(
         message: String,
         currentPrompt: SystemPrompt<*>,
-        messageHistory: List<Message> = emptyList()
-    ): Result<ChatResponse> {
+        messageHistory: List<Message> = emptyList(),
+        settingsChatModel: SettingsChatModel
+    ): Result<ComplexBotMessage> {
+
         if (message.isBlank()) {
             return Result.failure(IllegalArgumentException("Сообщение не может быть пустым"))
         }
@@ -42,18 +48,28 @@ class ChatUseCase(
 
         val newPrompt = extractSystemPromptFromContent(message, currentPrompt) ?: currentPrompt
         val localResponse = handleMessage(newPrompt, message)
-        if (localResponse != null) return Result.success(localResponse)
+        if (localResponse != null) {
+            return Result.success(
+                ComplexBotMessage(
+                    message = localResponse,
+                    activePrompt = newPrompt,
+                    activeModelName = null
+                )
+            )
+        }
 
         val cleanedMessage = prepareMessageForSending(newPrompt, message)
-        val historyToSend = prepareHistoryForSending(newPrompt, messageHistory)
+        val historyToSend = prepareHistoryForSending(newPrompt, messageHistory, settingsChatModel)
 
-        val result = chatRepository.sendMessage(cleanedMessage, newPrompt, historyToSend)
-        return result.map { sendMessageResult ->
-            ChatResponse(
-                botResponse = sendMessageResult.botResponse,
-                newPrompt = newPrompt,
-                tokenUsage = sendMessageResult.tokenUsage,
-                modelName = sendMessageResult.modelName
+        return chatRepository.sendMessage(
+            message = cleanedMessage,
+            systemPrompt = newPrompt,
+            messageHistory = historyToSend
+        ).map { sendMessageResult ->
+            ComplexBotMessage(
+                message = sendMessageResult.toMessage(messageHistory),
+                activePrompt = newPrompt,
+                activeModelName = sendMessageResult.modelName
             )
         }
     }
@@ -105,14 +121,38 @@ class ChatUseCase(
         }
     }
 
-    private fun handleMessage(activePrompt: SystemPrompt<*>, message: String): ChatResponse? {
+    private fun handleMessage(activePrompt: SystemPrompt<*>, message: String): Message? {
         val localResponse = activePrompt.handleMessageLocally(message)
         return localResponse?.let {
-            ChatResponse(
-                botResponse = it,
-                newPrompt = activePrompt
+            Message(
+                id = UUID.randomUUID().toString(),
+                text = localResponse.rawContent,
+                type = MessageType.BOT,
+                typedResponse = localResponse,
+                tokenUsage = null,
+                tokenUsageDiff = null
             )
         }
+    }
+
+    private fun SendMessageResult.toMessage(messageHistory: List<Message>): Message {
+        val previousBotMessage = messageHistory
+            .asReversed()
+            .firstOrNull { it.type == MessageType.BOT && it.tokenUsage?.hasData() == true }
+
+        val diff = TokenStatisticsCalculator.calculateDiff(
+            tokenUsage,
+            previousBotMessage
+        )
+
+        return Message(
+            id = UUID.randomUUID().toString(),
+            text = botResponse.rawContent,
+            type = MessageType.BOT,
+            typedResponse = botResponse,
+            tokenUsage = tokenUsage,
+            tokenUsageDiff = diff
+        )
     }
 
     /**
@@ -126,11 +166,13 @@ class ChatUseCase(
     private fun prepareMessageForSending(prompt: SystemPrompt<*>, message: String): String {
         return when (prompt) {
             is DynamicTemperaturePrompt -> {
-               prompt.extractAndCleanMessage(message)
+                prompt.extractAndCleanMessage(message)
             }
+
             is DynamicModelPrompt -> {
-               prompt.extractAndCleanMessage(message)
+                prompt.extractAndCleanMessage(message)
             }
+
             else -> message
         }
     }
@@ -141,29 +183,18 @@ class ChatUseCase(
      *
      * @param prompt активный системный промпт
      * @param messageHistory полная история сообщений
+     * @param settingsChatModel настройка чата
      * @return история для отправки (может быть пустой для некоторых промптов)
      */
     private fun prepareHistoryForSending(
         prompt: SystemPrompt<*>,
-        messageHistory: List<Message>
+        messageHistory: List<Message>,
+        settingsChatModel: SettingsChatModel
     ): List<Message> {
-        return when (prompt) {
-            is DynamicTemperaturePrompt, is DynamicModelPrompt-> emptyList()
-            else -> messageHistory
+        return if (settingsChatModel.isUseMessageHistory) {
+            messageHistory
+        } else {
+            emptyList()
         }
     }
 }
-
-/**
- * Результат отправки сообщения с типизированным ответом и новым промптом
- * @property botResponse типизированный ответ бота
- * @property newPrompt активный промпт после обработки сообщения
- * @property tokenUsage статистика использования токенов (null если не предоставлено)
- * @property modelName имя использованной модели (null если не установлено)
- */
-data class ChatResponse(
-    val botResponse: BotResponse,
-    val newPrompt: SystemPrompt<*>,
-    val tokenUsage: TokenUsage? = null,
-    val modelName: String? = null
-)

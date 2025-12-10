@@ -10,7 +10,8 @@ package com.example.aicourse.domain.chat.model
 data class TokenUsage(
     val promptTokens: Int? = null,
     val completionTokens: Int? = null,
-    val totalTokens: Int? = null
+    val totalTokens: Int? = null,
+    val maxAvailableTokens: Int? = null
 ) {
     /**
      * Проверяет, содержит ли объект хотя бы одно значение

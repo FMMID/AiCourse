@@ -1,6 +1,6 @@
 package com.example.aicourse.data.chat.remote
 
-import com.example.aicourse.domain.chat.model.ChatResponse
+import com.example.aicourse.data.chat.remote.model.ChatResponseData
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.ModelType
 
@@ -22,7 +22,7 @@ interface ChatRemoteDataSource {
         message: String,
         config: ChatConfig,
         messageHistory: List<Message> = emptyList()
-    ): ChatResponse
+    ): ChatResponseData
 
     /**
      * Резолвит тип модели в конкретный идентификатор модели для данного провайдера

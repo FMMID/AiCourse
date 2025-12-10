@@ -2,7 +2,7 @@ package com.example.aicourse.data.chat.mapper
 
 import android.content.Context
 import com.example.aicourse.data.chat.remote.ChatConfig
-import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 import java.io.BufferedReader
 import java.io.InputStreamReader
 

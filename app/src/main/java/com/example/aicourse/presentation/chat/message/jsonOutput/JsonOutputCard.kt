@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.model.json.JsonOutputResponse
+import com.example.aicourse.domain.chat.promt.json.JsonOutputResponse
 import com.example.aicourse.ui.theme.AiCourseTheme
 import org.json.JSONObject
 
@@ -83,6 +83,7 @@ private fun formatJson(response: JsonOutputResponse): String {
                 append("}")
             }
         }
+
         response.isError() -> {
             buildString {
                 appendLine("{")
@@ -90,6 +91,7 @@ private fun formatJson(response: JsonOutputResponse): String {
                 append("}")
             }
         }
+
         else -> {
             try {
                 val json = JSONObject(response.rawContent)

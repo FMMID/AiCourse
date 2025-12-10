@@ -1,9 +1,9 @@
 package com.example.aicourse.domain.chat.repository
 
-import com.example.aicourse.domain.chat.model.BotResponse
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.SystemPrompt
 import com.example.aicourse.domain.chat.model.TokenUsage
+import com.example.aicourse.domain.chat.promt.BotResponse
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 
 /**
  * Результат отправки сообщения с метаданными

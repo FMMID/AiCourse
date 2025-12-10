@@ -2,9 +2,9 @@ package com.example.aicourse.presentation.chat
 
 import androidx.compose.runtime.Immutable
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.SystemPrompt
 import com.example.aicourse.domain.chat.model.TokenUsage
-import com.example.aicourse.domain.chat.model.plain.PlainTextPrompt
+import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 
 @Immutable
 data class ChatUiState(

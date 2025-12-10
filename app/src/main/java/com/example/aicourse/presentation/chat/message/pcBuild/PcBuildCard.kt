@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.model.pc.PcBuildResponse
+import com.example.aicourse.domain.chat.promt.pc.PcBuildResponse
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 /**
