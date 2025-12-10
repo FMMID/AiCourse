@@ -56,10 +56,10 @@ fun ActivePromptIndicator(
                                     append(shortModelName)
                                 }
                                 if (tokenUsage != null && tokenUsage.hasData()) {
-                                    append(" - ")
-                                    append("${tokenUsage.promptTokens ?: 0} - ")
-                                    append("${tokenUsage.completionTokens ?: 0} - ")
-                                    append(tokenUsage.totalTokens ?: 0)
+                                    append("\n")
+                                    append("tt: ${tokenUsage.promptTokens ?: 0} - ")
+                                    append("ct: ${tokenUsage.completionTokens ?: 0} - ")
+                                    append("tt: ${tokenUsage.totalTokens ?: 0}")
                                 }
                             }
                         }

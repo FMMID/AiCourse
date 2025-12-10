@@ -1,6 +1,7 @@
 package com.example.aicourse.domain.chat.model.dynamicModel
 
 import android.util.Log
+import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.ModelType
 import com.example.aicourse.domain.chat.model.SystemPrompt
 
@@ -24,7 +25,7 @@ class DynamicModelPrompt(
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f
     override val maxTokens: Int = 2048
-    override val contentResourceId: Int? = null
+    override val contentResourceId: Int = R.raw.dynamic_model_prompt
 
     override val modelType: ModelType?
         get() = currentModelType
