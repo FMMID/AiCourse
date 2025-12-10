@@ -1,4 +1,4 @@
-package com.example.aicourse.domain.chat.model
+package com.example.aicourse.domain.chat.promt
 
 /**
  * Базовый interface для всех типов ответов от бота

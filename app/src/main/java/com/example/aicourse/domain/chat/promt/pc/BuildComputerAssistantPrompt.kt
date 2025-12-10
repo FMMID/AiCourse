@@ -1,7 +1,7 @@
-package com.example.aicourse.domain.chat.model.pc
+package com.example.aicourse.domain.chat.promt.pc
 
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 import kotlinx.serialization.json.Json
 
 /**
@@ -46,8 +46,8 @@ class BuildComputerAssistantPrompt : SystemPrompt<PcBuildResponse> {
 
         // Проверка команд: точное совпадение или с пробелом после
         if (COMMAND_TRIGGERS.any { trigger ->
-            lowerMessage == trigger || lowerMessage.startsWith("$trigger ")
-        }) {
+                lowerMessage == trigger || lowerMessage.startsWith("$trigger ")
+            }) {
             return true
         }
 

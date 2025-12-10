@@ -1,4 +1,6 @@
-package com.example.aicourse.domain.chat.model
+package com.example.aicourse.domain.chat.promt
+
+import com.example.aicourse.domain.chat.model.ModelType
 
 /**
  * Базовый interface для system prompts

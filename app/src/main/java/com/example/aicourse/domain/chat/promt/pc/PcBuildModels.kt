@@ -1,4 +1,4 @@
-package com.example.aicourse.domain.chat.model.pc
+package com.example.aicourse.domain.chat.promt.pc
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

@@ -1,8 +1,8 @@
-package com.example.aicourse.domain.chat.model.dynamicTemperature
+package com.example.aicourse.domain.chat.promt.dynamicTemperature
 
 import android.util.Log
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 
 /**
  * Динамический системный промпт с управлением температурой
@@ -169,7 +169,7 @@ class DynamicTemperaturePrompt(
         val temperatureStr = matchResult.groupValues[1]
         val restMessage = matchResult.groupValues.getOrNull(2)?.trim()
 
-        Log.d("fed","parseTempCommand:${matchResult.groupValues}, restMessage:${restMessage}")
+        Log.d("fed", "parseTempCommand:${matchResult.groupValues}, restMessage:${restMessage}")
 
         val temperature = parseAndValidateTemperature(temperatureStr)
 

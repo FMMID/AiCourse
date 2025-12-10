@@ -1,9 +1,9 @@
-package com.example.aicourse.domain.chat.model.dynamicModel
+package com.example.aicourse.domain.chat.promt.dynamicModel
 
 import android.util.Log
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.ModelType
-import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 
 /**
  * Динамический системный промпт с управлением типом модели

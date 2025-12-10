@@ -1,4 +1,4 @@
-package com.example.aicourse.domain.chat.model
+package com.example.aicourse.data.chat.remote.model
 
 /**
  * Ответ от чат API с метаданными о токенах
@@ -10,7 +10,7 @@ package com.example.aicourse.domain.chat.model
  * @property totalTokens общее количество токенов (null если не предоставлено API)
  * @property modelName имя использованной модели (null если не установлено, напр. использовалась модель по умолчанию)
  */
-data class ChatResponse(
+class ChatResponseData(
     val content: String,
     val promptTokens: Int? = null,
     val completionTokens: Int? = null,

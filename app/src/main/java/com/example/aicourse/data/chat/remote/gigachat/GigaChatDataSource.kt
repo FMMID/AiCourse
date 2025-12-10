@@ -7,7 +7,7 @@ import com.example.aicourse.data.chat.remote.gigachat.model.ChatCompletionReques
 import com.example.aicourse.data.chat.remote.gigachat.model.ChatCompletionResponse
 import com.example.aicourse.data.chat.remote.gigachat.model.ChatMessage
 import com.example.aicourse.data.chat.remote.gigachat.model.TokenResponse
-import com.example.aicourse.domain.chat.model.ChatResponse
+import com.example.aicourse.data.chat.remote.model.ChatResponseData
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.ModelType
 import io.ktor.client.call.body
@@ -68,7 +68,7 @@ class GigaChatDataSource(
         message: String,
         config: ChatConfig,
         messageHistory: List<Message>
-    ): ChatResponse = withContext(Dispatchers.IO) {
+    ): ChatResponseData = withContext(Dispatchers.IO) {
         try {
             val token = getValidToken()
             val recentHistory = messageHistory.takeLast(MAX_HISTORY_MESSAGES)
@@ -112,7 +112,7 @@ class GigaChatDataSource(
                 ?: throw Exception("Пустой ответ от GigaChat API")
 
             // Извлекаем статистику токенов из usage (может быть null)
-            ChatResponse(
+            ChatResponseData(
                 content = content,
                 promptTokens = response.usage?.promptTokens,
                 completionTokens = response.usage?.completionTokens,

@@ -1,13 +1,13 @@
 package com.example.aicourse.presentation.settings
 
 import android.app.Application
-import com.example.aicourse.domain.settings.usecase.SettingsUseCase
+import com.example.aicourse.domain.settings.usecase.SettingsChatUseCase
 import com.example.aicourse.presentation.base.BaseViewModel
 
 //TODO после прикрутки DI сделать прокидывание единственного инстанса SettingsUseCase
 class SettingsViewModel(
     application: Application,
-    private val settingsUseCase: SettingsUseCase = SettingsUseCase()
+    private val settingsChatUseCase: SettingsChatUseCase = SettingsChatUseCase()
 ) : BaseViewModel<SettingsUiState, SettingsIntent>(application, SettingsUiState()) {
 
     //TODO добавить получение актуального состояния settingsChatModel из settingsUseCase для фомирования начального состояния  SettingsUiState()

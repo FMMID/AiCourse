@@ -1,6 +1,6 @@
-package com.example.aicourse.domain.chat.model.pc
+package com.example.aicourse.domain.chat.promt.pc
 
-import com.example.aicourse.domain.chat.model.BotResponse
+import com.example.aicourse.domain.chat.promt.BotResponse
 
 /**
  * Ответ ассистента по сборке ПК

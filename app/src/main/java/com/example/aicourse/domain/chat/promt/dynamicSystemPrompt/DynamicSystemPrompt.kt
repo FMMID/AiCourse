@@ -1,7 +1,7 @@
-package com.example.aicourse.domain.chat.model.dynamic
+package com.example.aicourse.domain.chat.promt.dynamicSystemPrompt
 
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 
 /**
  * Динамический системный промпт, который может переключаться между несколькими

@@ -1,6 +1,6 @@
-package com.example.aicourse.domain.chat.model.dynamicTemperature
+package com.example.aicourse.domain.chat.promt.dynamicTemperature
 
-import com.example.aicourse.domain.chat.model.BotResponse
+import com.example.aicourse.domain.chat.promt.BotResponse
 
 /**
  * Ответ от DynamicTemperaturePrompt

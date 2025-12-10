@@ -1,6 +1,6 @@
-package com.example.aicourse.domain.chat.model.dynamicModel
+package com.example.aicourse.domain.chat.promt.dynamicModel
 
-import com.example.aicourse.domain.chat.model.BotResponse
+import com.example.aicourse.domain.chat.promt.BotResponse
 
 /**
  * Ответ для DynamicModelPrompt
@@ -10,4 +10,4 @@ import com.example.aicourse.domain.chat.model.BotResponse
  */
 data class DynamicModelResponse(
     override val rawContent: String
-) : BotResponse 
+) : BotResponse

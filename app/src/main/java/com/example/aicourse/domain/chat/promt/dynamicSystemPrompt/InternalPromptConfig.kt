@@ -1,4 +1,4 @@
-package com.example.aicourse.domain.chat.model.dynamic
+package com.example.aicourse.domain.chat.promt.dynamicSystemPrompt
 
 /**
  * Конфигурация внутреннего промпта для DynamicSystemPrompt

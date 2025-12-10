@@ -2,15 +2,16 @@ package com.example.aicourse.presentation.chat
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
-import com.example.aicourse.BuildConfig
 import com.example.aicourse.data.chat.local.InMemoryChatDataSource
+import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
 import com.example.aicourse.data.chat.remote.huggingface.HuggingFaceDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.model.plain.PlainTextPrompt
+import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.usecase.ChatUseCase
-import com.example.aicourse.domain.chat.util.TokenStatisticsCalculator
+import com.example.aicourse.domain.settings.model.ApiImplementation
+import com.example.aicourse.domain.settings.usecase.SettingsChatUseCase
 import com.example.aicourse.presentation.base.BaseViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -18,8 +19,11 @@ import java.util.UUID
 
 class ChatViewModel(
     application: Application,
-    private val chatUseCase: ChatUseCase = createChatUseCase(application)
+    private val settingsChatUseCase: SettingsChatUseCase = createSettingsUseCase(),
+    private val chatUseCase: ChatUseCase = createChatUseCase(application, settingsChatUseCase),
 ) : BaseViewModel<ChatUiState, ChatIntent>(application, ChatUiState()) {
+
+    private var settingsChatModel = settingsChatUseCase.getSettingsChatModel()
 
     override fun handleIntent(intent: ChatIntent) {
         when (intent) {
@@ -54,36 +58,18 @@ class ChatViewModel(
             chatUseCase.sendMessageToBot(
                 message = text,
                 currentPrompt = _uiState.value.activePrompt,
-                messageHistory = _uiState.value.messages
+                messageHistory = _uiState.value.messages,
+                settingsChatModel = settingsChatModel,
             )
-                .onSuccess { chatResponse ->
-                    val previousBotMessage = _uiState.value.messages
-                        .asReversed()
-                        .firstOrNull { it.type == MessageType.BOT && it.tokenUsage?.hasData() == true }
-
-                    val diff = TokenStatisticsCalculator.calculateDiff(
-                        chatResponse.tokenUsage,
-                        previousBotMessage
-                    )
-
-                    val botMessage = Message(
-                        id = UUID.randomUUID().toString(),
-                        text = chatResponse.botResponse.rawContent,
-                        type = MessageType.BOT,
-                        typedResponse = chatResponse.botResponse,
-                        tokenUsage = chatResponse.tokenUsage,
-                        contextLimit = chatResponse.newPrompt.maxTokens,
-                        tokenUsageDiff = diff
-                    )
-
+                .onSuccess { complexBotMessage ->
                     _uiState.update { state ->
                         state.copy(
-                            messages = state.messages + botMessage,
+                            messages = state.messages + complexBotMessage.message,
                             isLoading = false,
                             error = null,
-                            activePrompt = chatResponse.newPrompt,
-                            lastTokenUsage = chatResponse.tokenUsage,
-                            lastModelName = chatResponse.modelName
+                            activePrompt = complexBotMessage.activePrompt,
+                            lastTokenUsage = complexBotMessage.message.tokenUsage,
+                            lastModelName = complexBotMessage.activeModelName
                         )
                     }
                 }
@@ -138,12 +124,19 @@ class ChatViewModel(
          * Фабричная функция для создания ChatUseCase с зависимостями
          * TODO: Заменить на Dependency Injection (Hilt, Koin, и т.д.)
          */
-        private fun createChatUseCase(application: Application): ChatUseCase {
-            val authorizationKey = BuildConfig.HUGGING_FACE_AUTH_KEY
-            val remoteDataSource = HuggingFaceDataSource(authorizationKey)
+        private fun createChatUseCase(application: Application, settingsChatUseCase: SettingsChatUseCase): ChatUseCase {
+            val settingsChatModel = settingsChatUseCase.getSettingsChatModel()
+            val remoteDataSource = when (val apiImplementation = settingsChatModel.currentUseApiImplementation) {
+                ApiImplementation.GIGA_CHAT -> GigaChatDataSource(apiImplementation.key)
+                ApiImplementation.HUGGING_FACE -> HuggingFaceDataSource(apiImplementation.key)
+            }
             val localDataSource = InMemoryChatDataSource()
             val repository = ChatRepositoryImpl(application, remoteDataSource, localDataSource)
             return ChatUseCase(repository)
+        }
+
+        private fun createSettingsUseCase(): SettingsChatUseCase {
+            return SettingsChatUseCase()
         }
     }
 }

@@ -1,6 +1,6 @@
-package com.example.aicourse.domain.chat.model.plain
+package com.example.aicourse.domain.chat.promt.plain
 
-import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 
 /**
  * Дефолтный промпт для обычного текстового общения

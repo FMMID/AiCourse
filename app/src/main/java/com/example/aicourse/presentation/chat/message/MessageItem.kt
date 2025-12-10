@@ -16,8 +16,8 @@ import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.model.TokenUsageDiff
-import com.example.aicourse.domain.chat.model.json.JsonOutputResponse
-import com.example.aicourse.domain.chat.model.pc.PcBuildResponse
+import com.example.aicourse.domain.chat.promt.json.JsonOutputResponse
+import com.example.aicourse.domain.chat.promt.pc.PcBuildResponse
 import com.example.aicourse.presentation.chat.message.jsonOutput.JsonOutputCard
 import com.example.aicourse.presentation.chat.message.pcBuild.PcBuildCard
 import com.example.aicourse.presentation.chat.message.plainText.PlainTextCard
@@ -69,10 +69,10 @@ fun MessageItem(
             }
         }
 
-        if (!isUser && message.tokenUsage?.hasData() == true && message.contextLimit != null) {
+        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.totalTokens != null) {
             TokenStatisticsCard(
                 tokenUsage = message.tokenUsage,
-                contextLimit = message.contextLimit,
+                contextLimit = message.tokenUsage.totalTokens,
                 diff = message.tokenUsageDiff ?: TokenUsageDiff(),
                 modifier = Modifier
                     .fillMaxWidth()
