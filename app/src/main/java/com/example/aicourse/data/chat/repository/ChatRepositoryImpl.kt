@@ -4,10 +4,11 @@ import android.content.Context
 import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.mapper.SystemPromptMapper
 import com.example.aicourse.data.chat.remote.ChatRemoteDataSource
-import com.example.aicourse.domain.chat.model.BotResponse
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.model.TokenUsage
 import com.example.aicourse.domain.chat.repository.ChatRepository
+import com.example.aicourse.domain.chat.repository.SendMessageResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -25,14 +26,27 @@ class ChatRepositoryImpl(
         message: String,
         systemPrompt: SystemPrompt<*>,
         messageHistory: List<Message>
-    ): Result<BotResponse> = withContext(Dispatchers.IO) {
+    ): Result<SendMessageResult> = withContext(Dispatchers.IO) {
         try {
             localDataSource.saveMessage(message, isUser = true)
-            val config = SystemPromptMapper.toChatConfig(context, systemPrompt)
+
+            val resolvedModel = systemPrompt.modelType?.let { modelType -> remoteDataSource.resolveModel(modelType) }
+            val config = SystemPromptMapper.toChatConfig(context, systemPrompt, resolvedModel)
             val rawResponse = remoteDataSource.sendMessage(message, config, messageHistory)
-            val botResponse = systemPrompt.parseResponse(rawResponse)
+            val botResponse = systemPrompt.parseResponse(rawResponse.content)
             localDataSource.saveMessage(botResponse.rawContent, isUser = false)
-            Result.success(botResponse)
+
+            val result = SendMessageResult(
+                botResponse = botResponse,
+                tokenUsage = TokenUsage(
+                    promptTokens = rawResponse.promptTokens,
+                    completionTokens = rawResponse.completionTokens,
+                    totalTokens = rawResponse.totalTokens
+                ),
+                modelName = rawResponse.modelName ?: resolvedModel
+            )
+
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(e)
         }

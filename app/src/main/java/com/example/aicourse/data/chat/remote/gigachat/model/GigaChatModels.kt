@@ -1,4 +1,4 @@
-package com.example.aicourse.data.chat.remote.model
+package com.example.aicourse.data.chat.remote.gigachat.model
 
 import com.example.aicourse.domain.chat.model.MessageType
 import kotlinx.serialization.SerialName

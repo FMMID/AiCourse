@@ -16,7 +16,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.SystemPrompt
+import com.example.aicourse.domain.chat.model.TokenUsage
 import com.example.aicourse.domain.chat.model.dynamic.DynamicSystemPrompt
+import com.example.aicourse.domain.chat.model.dynamicModel.DynamicModelPrompt
 import com.example.aicourse.domain.chat.model.dynamicTemperature.DynamicTemperaturePrompt
 import com.example.aicourse.domain.chat.model.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.model.pc.BuildComputerAssistantPrompt
@@ -26,7 +28,9 @@ import com.example.aicourse.ui.theme.AiCourseTheme
 fun ActivePromptIndicator(
     activePrompt: SystemPrompt<*>,
     onReset: () -> Unit,
-    modifier: Modifier = Modifier.Companion
+    modifier: Modifier = Modifier.Companion,
+    tokenUsage: TokenUsage? = null,
+    modelName: String? = null
 ) {
     Row(
         modifier = modifier.padding(vertical = dimensionResource(R.dimen.spacing_small)),
@@ -42,6 +46,22 @@ fun ActivePromptIndicator(
                         is DynamicTemperaturePrompt -> {
                             val temp = activePrompt.temperature
                             "🌡️ DT Mode | Temp: $temp"
+                        }
+                        is DynamicModelPrompt -> {
+                            buildString {
+                                append("🤖 DM")
+                                if (modelName != null) {
+                                    append(" | ")
+                                    val shortModelName = modelName.split("/").lastOrNull()?.take(20) ?: modelName
+                                    append(shortModelName)
+                                }
+                                if (tokenUsage != null && tokenUsage.hasData()) {
+                                    append("\n")
+                                    append("tt: ${tokenUsage.promptTokens ?: 0} - ")
+                                    append("ct: ${tokenUsage.completionTokens ?: 0} - ")
+                                    append("tt: ${tokenUsage.totalTokens ?: 0}")
+                                }
+                            }
                         }
                         is DynamicSystemPrompt -> {
                             val activeName = activePrompt.getActivePromptName()

@@ -18,9 +18,14 @@ object SystemPromptMapper {
      *
      * @param context Android context для доступа к ресурсам
      * @param systemPrompt domain модель промпта
+     * @param resolvedModel уже резолвленный идентификатор модели (опционально)
      * @return ChatConfig для передачи в ChatRemoteDataSource
      */
-    fun toChatConfig(context: Context, systemPrompt: SystemPrompt<*>): ChatConfig {
+    fun toChatConfig(
+        context: Context,
+        systemPrompt: SystemPrompt<*>,
+        resolvedModel: String? = null
+    ): ChatConfig {
         val systemContent = systemPrompt.contentResourceId?.let { resourceId ->
             readRawResource(context, resourceId)
         }
@@ -29,7 +34,8 @@ object SystemPromptMapper {
             temperature = systemPrompt.temperature,
             topP = systemPrompt.topP,
             maxTokens = systemPrompt.maxTokens,
-            systemContent = systemContent
+            systemContent = systemContent,
+            model = resolvedModel
         )
     }
 
