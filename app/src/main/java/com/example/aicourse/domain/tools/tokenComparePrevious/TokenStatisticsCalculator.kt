@@ -1,8 +1,7 @@
-package com.example.aicourse.domain.chat.util
+package com.example.aicourse.domain.tools.tokenComparePrevious
 
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.TokenUsage
-import com.example.aicourse.domain.chat.model.TokenUsageDiff
+import com.example.aicourse.domain.tools.tokenComparePrevious.model.TokenUsageDiff
 
 /**
  * Утилита для вычисления статистики использования токенов
@@ -16,19 +15,19 @@ object TokenStatisticsCalculator {
      * @return объект с разницей
      */
     fun calculateDiff(
-        current: TokenUsage?,
+        current: Message?,
         previous: Message?
     ): TokenUsageDiff {
-        if (current == null || !current.hasData()) {
+        if (current == null || current.tokenUsage?.hasData() == false) {
             return TokenUsageDiff()
         }
 
         val previousUsage = previous?.tokenUsage
 
         return TokenUsageDiff(
-            promptTokensDiff = (current.promptTokens ?: 0) - (previousUsage?.promptTokens ?: 0),
-            completionTokensDiff = (current.completionTokens ?: 0) - (previousUsage?.completionTokens ?: 0),
-            totalTokensDiff = (current.totalTokens ?: 0) - (previousUsage?.totalTokens ?: 0)
+            promptTokensDiff = (current.tokenUsage?.promptTokens ?: 0) - (previousUsage?.promptTokens ?: 0),
+            completionTokensDiff = (current.tokenUsage?.completionTokens ?: 0) - (previousUsage?.completionTokens ?: 0),
+            totalTokensDiff = (current.tokenUsage?.totalTokens ?: 0) - (previousUsage?.totalTokens ?: 0)
         )
     }
 

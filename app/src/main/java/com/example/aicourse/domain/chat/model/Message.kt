@@ -19,7 +19,6 @@ data class Message(
     val timestamp: Long = System.currentTimeMillis(),
     val typedResponse: BotResponse? = null,
     val tokenUsage: TokenUsage? = null,
-    val tokenUsageDiff: TokenUsageDiff? = null
 )
 
 enum class MessageType {

@@ -2,9 +2,9 @@ package com.example.aicourse.presentation.chat
 
 import androidx.compose.runtime.Immutable
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.TokenUsage
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
+import com.example.aicourse.domain.tools.ToolResult
 
 @Immutable
 data class ChatUiState(
@@ -12,6 +12,5 @@ data class ChatUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val activePrompt: SystemPrompt<*> = PlainTextPrompt(),
-    val lastTokenUsage: TokenUsage? = null,
-    val lastModelName: String? = null
+    val toolResult: ToolResult? = null,
 )

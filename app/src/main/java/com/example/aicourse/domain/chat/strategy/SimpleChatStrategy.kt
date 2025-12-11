@@ -9,14 +9,36 @@ import com.example.aicourse.domain.chat.promt.dynamicSystemPrompt.DynamicSystemP
 import com.example.aicourse.domain.chat.promt.dynamicTemperature.DynamicTemperaturePrompt
 import com.example.aicourse.domain.chat.promt.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.promt.pc.BuildComputerAssistantPrompt
+import com.example.aicourse.domain.chat.repository.SendMessageResult
+import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
 import com.example.aicourse.domain.settings.model.HistoryStrategy
+import com.example.aicourse.domain.settings.model.OutPutDataStrategy
 import com.example.aicourse.domain.settings.model.SettingsChatModel
+import com.example.aicourse.domain.settings.model.TokenConsumptionMode
+import com.example.aicourse.domain.tools.Tool
+import com.example.aicourse.domain.tools.context.ContextWindowManager
+import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
+import com.example.aicourse.domain.tools.tokenComparePrevious.TokenCompareManager
 import java.util.UUID
 
-class SimpleDataForSendStrategyImp(initSettingsChatModel: SettingsChatModel) : PrepareDataForSendStrategy {
+class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrategy {
 
-    override var settingsChatModel: SettingsChatModel = initSettingsChatModel
+    override val settingsChatModel: SettingsChatModel = initSettingsChatModel
+    private var activeTool: Tool<*>? = run {
+        when (val outPutStrategy = initSettingsChatModel.outPutDataStrategy) {
+            is OutPutDataStrategy.ModelInfo -> ModelInfoManager()
+
+            is OutPutDataStrategy.Token -> {
+                when (outPutStrategy.tokenConsumptionMode) {
+                    TokenConsumptionMode.COMPARE_PREVIOUS -> TokenCompareManager()
+                    TokenConsumptionMode.CONTEXT_MODE -> TODO("imnplement")
+                }
+            }
+
+            OutPutDataStrategy.None -> null
+        }
+    }
 
     override suspend fun prepareData(sendToChatDataModel: SendToChatDataModel): DataForSend {
         val newPrompt = extractSystemPromptFromContent(
@@ -43,6 +65,35 @@ class SimpleDataForSendStrategyImp(initSettingsChatModel: SettingsChatModel) : P
         )
     }
 
+    override suspend fun processReceivedData(
+        sendMessageResult: SendMessageResult,
+        sendToChatDataModel: SendToChatDataModel
+    ): DataForReceive {
+        val responseMessage = sendMessageResult.toMessage()
+
+        val toolResult = when (val tool = activeTool) {
+            is TokenCompareManager -> {
+                tool.processData(processData = responseMessage)
+            }
+
+            is ContextWindowManager -> {
+                tool.processData(processData = sendToChatDataModel)
+            }
+
+            else -> null
+        }
+
+        return DataForReceive.Simple(
+            message = responseMessage,
+            activePrompt = sendToChatDataModel.systemPrompt,
+            toolResult = toolResult
+        )
+    }
+
+    override suspend fun clear() {
+        activeTool?.clear()
+    }
+
     private fun handleLocalMessage(activePrompt: SystemPrompt<*>, message: String): Message? {
         val localResponse = activePrompt.handleMessageLocally(message)
         return localResponse?.let {
@@ -52,7 +103,6 @@ class SimpleDataForSendStrategyImp(initSettingsChatModel: SettingsChatModel) : P
                 type = MessageType.BOT,
                 typedResponse = localResponse,
                 tokenUsage = null,
-                tokenUsageDiff = null
             )
         }
     }
@@ -123,5 +173,15 @@ class SimpleDataForSendStrategyImp(initSettingsChatModel: SettingsChatModel) : P
             HistoryStrategy.ONE_MESSAGE -> emptyList()
             HistoryStrategy.SUMMERIZE -> error("not implemented")
         }
+    }
+
+    private fun SendMessageResult.toMessage(): Message {
+        return Message(
+            id = UUID.randomUUID().toString(),
+            text = botResponse.rawContent,
+            type = MessageType.BOT,
+            typedResponse = botResponse,
+            tokenUsage = tokenUsage,
+        )
     }
 }

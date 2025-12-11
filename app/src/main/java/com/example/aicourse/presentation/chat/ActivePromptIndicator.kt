@@ -22,15 +22,17 @@ import com.example.aicourse.domain.chat.promt.dynamicSystemPrompt.DynamicSystemP
 import com.example.aicourse.domain.chat.promt.dynamicTemperature.DynamicTemperaturePrompt
 import com.example.aicourse.domain.chat.promt.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.promt.pc.BuildComputerAssistantPrompt
+import com.example.aicourse.domain.tools.ToolResult
+import com.example.aicourse.domain.tools.modelInfo.model.ModelInfo
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 @Composable
 fun ActivePromptIndicator(
     activePrompt: SystemPrompt<*>,
-    onReset: () -> Unit,
     modifier: Modifier = Modifier.Companion,
+    toolResult: ToolResult? = null,
     tokenUsage: TokenUsage? = null,
-    modelName: String? = null
+    onReset: () -> Unit
 ) {
     Row(
         modifier = modifier.padding(vertical = dimensionResource(R.dimen.spacing_small)),
@@ -49,6 +51,7 @@ fun ActivePromptIndicator(
                         }
 
                         is DynamicModelPrompt -> {
+                            val modelName = (toolResult as? ModelInfo)?.modelName
                             buildString {
                                 append("🤖 DM")
                                 if (modelName != null) {

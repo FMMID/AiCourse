@@ -1,16 +1,13 @@
 package com.example.aicourse.domain.chat.usecase
 
-import com.example.aicourse.domain.chat.strategy.model.DataForSend
-import com.example.aicourse.domain.chat.strategy.PrepareDataForSendStrategy
 import com.example.aicourse.domain.chat.model.ComplexBotMessage
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.model.SendToChatDataModel
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
-import com.example.aicourse.domain.chat.repository.SendMessageResult
-import com.example.aicourse.domain.chat.util.TokenStatisticsCalculator
-import java.util.UUID
+import com.example.aicourse.domain.chat.strategy.ChatStrategy
+import com.example.aicourse.domain.chat.strategy.model.DataForReceive
+import com.example.aicourse.domain.chat.strategy.model.DataForSend
 
 /**
  * Use Case для работы с чатом
@@ -19,7 +16,7 @@ import java.util.UUID
  */
 class ChatUseCase(
     private val chatRepository: ChatRepository,
-    private val prepareDataForSendStrategy: PrepareDataForSendStrategy
+    private val chatStrategy: ChatStrategy
 ) {
 
     /**
@@ -35,16 +32,7 @@ class ChatUseCase(
         currentPrompt: SystemPrompt<*>,
         messageHistory: List<Message> = emptyList()
     ): Result<ComplexBotMessage> {
-
-        //TODO убрать отсюда эти проверки
-        if (message.isBlank()) {
-            return Result.failure(IllegalArgumentException("Сообщение не может быть пустым"))
-        }
-        if (isResetCommand(message)) {
-            return Result.failure(IllegalArgumentException("Используйте ResetPrompt intent для сброса"))
-        }
-
-        val dataForSend = prepareDataForSendStrategy.prepareData(
+        val dataForSend = chatStrategy.prepareData(
             SendToChatDataModel(
                 message = message,
                 systemPrompt = currentPrompt,
@@ -57,20 +45,32 @@ class ChatUseCase(
                 ComplexBotMessage(
                     message = dataForSend.responseMessage,
                     activePrompt = dataForSend.activePrompt,
-                    activeModelName = dataForSend.activeModelName
+                    toolResult = null
                 )
             )
 
-            is DataForSend.RemoteCall -> chatRepository.sendMessage(
-                message = dataForSend.sendToChatDataModel.message,
-                systemPrompt = dataForSend.sendToChatDataModel.systemPrompt,
-                messageHistory = dataForSend.sendToChatDataModel.messageHistory
-            ).map { sendMessageResult ->
-                ComplexBotMessage(
-                    message = sendMessageResult.toMessage(messageHistory),
-                    activePrompt = dataForSend.sendToChatDataModel.systemPrompt,
-                    activeModelName = sendMessageResult.modelName
+            is DataForSend.RemoteCall -> {
+                val sendMessageResult = chatRepository.sendMessage(
+                    message = dataForSend.sendToChatDataModel.message,
+                    systemPrompt = dataForSend.sendToChatDataModel.systemPrompt,
+                    messageHistory = dataForSend.sendToChatDataModel.messageHistory
                 )
+
+                sendMessageResult.map { result ->
+                    val dataForReceive = chatStrategy.processReceivedData(
+                        sendMessageResult = result,
+                        sendToChatDataModel = dataForSend.sendToChatDataModel
+                    )
+                    when (dataForReceive) {
+                        is DataForReceive.Simple -> {
+                            ComplexBotMessage(
+                                message = dataForReceive.message,
+                                activePrompt = dataForReceive.activePrompt,
+                                toolResult = dataForReceive.toolResult
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -87,33 +87,5 @@ class ChatUseCase(
      */
     suspend fun getMessageHistory(): Result<List<String>> {
         return chatRepository.getMessageHistory()
-    }
-
-    /**
-     * Проверяет команды сброса промпта
-     */
-    private fun isResetCommand(message: String): Boolean {
-        val lowerMessage = message.trim().lowercase()
-        return lowerMessage == "/reset" || lowerMessage == "/plain"
-    }
-
-    private fun SendMessageResult.toMessage(messageHistory: List<Message>): Message {
-        val previousBotMessage = messageHistory
-            .asReversed()
-            .firstOrNull { it.type == MessageType.BOT && it.tokenUsage?.hasData() == true }
-
-        val diff = TokenStatisticsCalculator.calculateDiff(
-            tokenUsage,
-            previousBotMessage
-        )
-
-        return Message(
-            id = UUID.randomUUID().toString(),
-            text = botResponse.rawContent,
-            type = MessageType.BOT,
-            typedResponse = botResponse,
-            tokenUsage = tokenUsage,
-            tokenUsageDiff = diff
-        )
     }
 }

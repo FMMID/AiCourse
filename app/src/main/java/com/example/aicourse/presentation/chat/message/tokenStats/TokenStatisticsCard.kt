@@ -17,7 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.TokenUsage
-import com.example.aicourse.domain.chat.model.TokenUsageDiff
+import com.example.aicourse.domain.tools.tokenComparePrevious.model.TokenUsageDiff
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 /**
@@ -27,7 +27,6 @@ import com.example.aicourse.ui.theme.AiCourseTheme
 @Composable
 fun TokenStatisticsCard(
     tokenUsage: TokenUsage,
-    contextLimit: Int,
     diff: TokenUsageDiff,
     modifier: Modifier = Modifier
 ) {
@@ -54,7 +53,7 @@ fun TokenStatisticsCard(
             // Stacked Progress Bar
             StackedProgressBar(
                 tokenUsage = tokenUsage,
-                contextLimit = contextLimit,
+                contextLimit = tokenUsage.maxAvailableTokens ?: 0,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -63,7 +62,7 @@ fun TokenStatisticsCard(
             // Текстовая статистика
             TokenStatisticsText(
                 tokenUsage = tokenUsage,
-                contextLimit = contextLimit,
+                contextLimit = tokenUsage.maxAvailableTokens ?: 0,
                 diff = diff,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -79,9 +78,9 @@ private fun TokenStatisticsCardPreview() {
             tokenUsage = TokenUsage(
                 promptTokens = 240,
                 completionTokens = 450,
-                totalTokens = 690
+                totalTokens = 690,
+                maxAvailableTokens = 8192
             ),
-            contextLimit = 8192,
             diff = TokenUsageDiff(
                 promptTokensDiff = 120,
                 completionTokensDiff = 150,

@@ -1,11 +1,11 @@
 package com.example.aicourse.presentation.chat.message
 
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,12 +20,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
+import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 @Composable
 fun MessagesList(
     modifier: Modifier = Modifier,
     messages: List<Message> = emptyList(),
+    toolResult: ToolResult? = null,
     isLoading: Boolean = false,
     listState: LazyListState = rememberLazyListState()
 ) {
@@ -42,7 +44,7 @@ fun MessagesList(
             items = messages,
             key = { message -> message.id }
         ) { message ->
-            MessageItem(message = message)
+            MessageItem(message = message, toolResult = toolResult)
         }
 
         if (isLoading) {

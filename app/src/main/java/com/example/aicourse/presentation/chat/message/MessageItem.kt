@@ -15,9 +15,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.model.TokenUsageDiff
 import com.example.aicourse.domain.chat.promt.json.JsonOutputResponse
 import com.example.aicourse.domain.chat.promt.pc.PcBuildResponse
+import com.example.aicourse.domain.tools.ToolResult
+import com.example.aicourse.domain.tools.tokenComparePrevious.model.TokenUsageDiff
 import com.example.aicourse.presentation.chat.message.jsonOutput.JsonOutputCard
 import com.example.aicourse.presentation.chat.message.pcBuild.PcBuildCard
 import com.example.aicourse.presentation.chat.message.plainText.PlainTextCard
@@ -27,6 +28,7 @@ import com.example.aicourse.ui.theme.AiCourseTheme
 @Composable
 fun MessageItem(
     message: Message,
+    toolResult: ToolResult? = null,
     modifier: Modifier = Modifier
 ) {
     val isUser = message.type == MessageType.USER
@@ -69,11 +71,10 @@ fun MessageItem(
             }
         }
 
-        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.maxAvailableTokens != null) {
+        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.maxAvailableTokens != null && toolResult is TokenUsageDiff) {
             TokenStatisticsCard(
                 tokenUsage = message.tokenUsage,
-                contextLimit = message.tokenUsage.maxAvailableTokens,
-                diff = message.tokenUsageDiff ?: TokenUsageDiff(),
+                diff = toolResult,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(

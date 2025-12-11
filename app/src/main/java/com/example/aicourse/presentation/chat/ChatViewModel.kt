@@ -6,10 +6,10 @@ import com.example.aicourse.data.chat.local.InMemoryChatDataSource
 import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
 import com.example.aicourse.data.chat.remote.huggingface.HuggingFaceDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
-import com.example.aicourse.domain.chat.strategy.SimpleDataForSendStrategyImp
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
+import com.example.aicourse.domain.chat.strategy.SimpleChatStrategy
 import com.example.aicourse.domain.chat.usecase.ChatUseCase
 import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.usecase.SettingsChatUseCase
@@ -66,8 +66,7 @@ class ChatViewModel(
                             isLoading = false,
                             error = null,
                             activePrompt = complexBotMessage.activePrompt,
-                            lastTokenUsage = complexBotMessage.message.tokenUsage,
-                            lastModelName = complexBotMessage.activeModelName
+                            toolResult = complexBotMessage.toolResult,
                         )
                     }
                 }
@@ -134,8 +133,8 @@ class ChatViewModel(
                 remoteDataSource = remoteDataSource,
                 localDataSource = localDataSource
             )
-            val simpleDataForSendStrategyImp = SimpleDataForSendStrategyImp(initSettingsChatModel = settingsChatModel)
-            return ChatUseCase(chatRepository = repository, prepareDataForSendStrategy = simpleDataForSendStrategyImp)
+            val simpleDataForSendStrategyImp = SimpleChatStrategy(initSettingsChatModel = settingsChatModel)
+            return ChatUseCase(chatRepository = repository, chatStrategy = simpleDataForSendStrategyImp)
         }
 
         private fun createSettingsUseCase(): SettingsChatUseCase {

@@ -2,8 +2,9 @@ package com.example.aicourse.domain.settings.usecase
 
 import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.model.HistoryStrategy
+import com.example.aicourse.domain.settings.model.OutPutDataStrategy
 import com.example.aicourse.domain.settings.model.SettingsChatModel
-import com.example.aicourse.domain.settings.model.TokenConsumptionStrategy
+import com.example.aicourse.domain.settings.model.TokenConsumptionMode
 
 //TODO добавить локальное хранилище, откуда будем загружать конфиг
 class SettingsChatUseCase {
@@ -12,7 +13,7 @@ class SettingsChatUseCase {
     private var activeSettingsChatModel: SettingsChatModel = SettingsChatModel(
         currentUseApiImplementation = ApiImplementation.GIGA_CHAT,
         historyStrategy = HistoryStrategy.SUMMERIZE,
-        tokenConsumptionStrategy = TokenConsumptionStrategy.CONTEXT_MODE,
+        outPutDataStrategy = OutPutDataStrategy.Token(TokenConsumptionMode.CONTEXT_MODE),
     )
 
     fun saveSettingsChatModel(newSettingsChatModel: SettingsChatModel) {

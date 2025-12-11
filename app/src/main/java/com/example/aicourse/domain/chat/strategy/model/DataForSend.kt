@@ -9,10 +9,10 @@ sealed interface DataForSend {
     class LocalResponse(
         val responseMessage: Message,
         val activePrompt: SystemPrompt<*>,
-        val activeModelName: String? = null
+        val activeModelName: String? = null,
     ) : DataForSend
 
     class RemoteCall(
-        val sendToChatDataModel: SendToChatDataModel
+        val sendToChatDataModel: SendToChatDataModel,
     ) : DataForSend
 }

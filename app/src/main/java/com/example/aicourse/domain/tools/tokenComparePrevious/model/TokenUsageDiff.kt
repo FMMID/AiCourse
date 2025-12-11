@@ -1,4 +1,6 @@
-package com.example.aicourse.domain.chat.model
+package com.example.aicourse.domain.tools.tokenComparePrevious.model
+
+import com.example.aicourse.domain.tools.ToolResult
 
 /**
  * Разница в использовании токенов между текущим и предыдущим сообщением
@@ -10,7 +12,7 @@ data class TokenUsageDiff(
     val promptTokensDiff: Int = 0,
     val completionTokensDiff: Int = 0,
     val totalTokensDiff: Int = 0
-) {
+) : ToolResult {
     /**
      * Проверяет, есть ли вообще изменения (не первое сообщение)
      */

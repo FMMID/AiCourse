@@ -12,8 +12,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.domain.chat.model.TokenUsage
-import com.example.aicourse.domain.chat.model.TokenUsageDiff
-import com.example.aicourse.domain.chat.util.TokenStatisticsCalculator
+import com.example.aicourse.domain.tools.tokenComparePrevious.model.TokenUsageDiff
+import com.example.aicourse.domain.tools.tokenComparePrevious.TokenStatisticsCalculator
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 /**
