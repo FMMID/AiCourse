@@ -54,18 +54,14 @@ class ChatViewModel(
         }
 
         viewModelScope.launch {
-            chatUseCase.sendMessageToBot(
-                message = text,
-                currentPrompt = _uiState.value.activePrompt,
-                messageHistory = _uiState.value.messages,
-            )
+            chatUseCase.sendMessageToBot(userMessage = userMessage)
                 .onSuccess { complexBotMessage ->
                     _uiState.update { state ->
                         state.copy(
                             messages = state.messages + complexBotMessage.message,
                             isLoading = false,
                             error = null,
-                            activePrompt = complexBotMessage.activePrompt,
+                            activePrompt = complexBotMessage.systemPrompt,
                             toolResult = complexBotMessage.toolResult,
                         )
                     }

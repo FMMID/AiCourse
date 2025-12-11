@@ -2,8 +2,6 @@ package com.example.aicourse.domain.chat.usecase
 
 import com.example.aicourse.domain.chat.model.ComplexBotMessage
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.SendToChatDataModel
-import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 import com.example.aicourse.domain.chat.strategy.ChatStrategy
 import com.example.aicourse.domain.chat.strategy.model.DataForReceive
@@ -22,50 +20,34 @@ class ChatUseCase(
     /**
      * Отправляет сообщение боту через репозиторий
      * Определяет промпт на основе триггеров или использует текущий активный
-     * @param message текст сообщения от пользователя
-     * @param currentPrompt текущий активный промпт
-     * @param messageHistory история предыдущих сообщений для контекста
+     * @param userMessage сообщение пользователя
      * @return Result с типизированным ответом и новым промптом
      */
     suspend fun sendMessageToBot(
-        message: String,
-        currentPrompt: SystemPrompt<*>,
-        messageHistory: List<Message> = emptyList()
+        userMessage: Message,
     ): Result<ComplexBotMessage> {
-        val dataForSend = chatStrategy.prepareData(
-            SendToChatDataModel(
-                message = message,
-                systemPrompt = currentPrompt,
-                messageHistory = messageHistory
-            )
-        )
-
-        return when (dataForSend) {
+        return when (val dataForSend = chatStrategy.prepareData(userMessage)) {
             is DataForSend.LocalResponse -> Result.success(
                 ComplexBotMessage(
                     message = dataForSend.responseMessage,
-                    activePrompt = dataForSend.activePrompt,
+                    systemPrompt = dataForSend.activePrompt,
                     toolResult = null
                 )
             )
 
             is DataForSend.RemoteCall -> {
                 val sendMessageResult = chatRepository.sendMessage(
-                    message = dataForSend.sendToChatDataModel.message,
-                    systemPrompt = dataForSend.sendToChatDataModel.systemPrompt,
-                    messageHistory = dataForSend.sendToChatDataModel.messageHistory
+                    message = dataForSend.message,
+                    systemPrompt = dataForSend.activePrompt,
+                    messageHistory = dataForSend.messageHistory
                 )
 
                 sendMessageResult.map { result ->
-                    val dataForReceive = chatStrategy.processReceivedData(
-                        sendMessageResult = result,
-                        sendToChatDataModel = dataForSend.sendToChatDataModel
-                    )
-                    when (dataForReceive) {
+                    when (val dataForReceive = chatStrategy.processReceivedData(sendMessageResult = result)) {
                         is DataForReceive.Simple -> {
                             ComplexBotMessage(
                                 message = dataForReceive.message,
-                                activePrompt = dataForReceive.activePrompt,
+                                systemPrompt = dataForReceive.activePrompt,
                                 toolResult = dataForReceive.toolResult
                             )
                         }
@@ -79,6 +61,7 @@ class ChatUseCase(
      * Очищает историю чата
      */
     suspend fun clearChatHistory(): Result<Unit> {
+        chatStrategy.clear()
         return chatRepository.clearHistory()
     }
 

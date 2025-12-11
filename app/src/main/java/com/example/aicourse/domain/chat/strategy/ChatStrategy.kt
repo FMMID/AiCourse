@@ -1,6 +1,6 @@
 package com.example.aicourse.domain.chat.strategy
 
-import com.example.aicourse.domain.chat.model.SendToChatDataModel
+import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.repository.SendMessageResult
 import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
@@ -10,12 +10,9 @@ interface ChatStrategy {
 
     val settingsChatModel: SettingsChatModel
 
-    suspend fun prepareData(sendToChatDataModel: SendToChatDataModel): DataForSend
+    suspend fun prepareData(userMessage: Message): DataForSend
 
-    suspend fun processReceivedData(
-        sendMessageResult: SendMessageResult,
-        sendToChatDataModel: SendToChatDataModel
-    ): DataForReceive
+    suspend fun processReceivedData(sendMessageResult: SendMessageResult): DataForReceive
 
     suspend fun clear()
 }
