@@ -1,6 +1,7 @@
 package com.example.aicourse.data.chat.remote
 
 import android.util.Log
+import com.example.aicourse.data.tools.context.SummarizeContextDataSource
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -14,7 +15,7 @@ import kotlinx.serialization.json.Json
  * Базовый класс для удаленных источников данных чата
  * Содержит общую логику для всех Chat API провайдеров
  */
-abstract class BaseChatRemoteDataSource : ChatRemoteDataSource {
+abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContextDataSource {
 
     /**
      * TAG для логирования (переопределяется в наследниках)

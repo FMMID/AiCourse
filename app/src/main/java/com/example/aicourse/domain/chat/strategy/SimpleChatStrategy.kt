@@ -1,5 +1,6 @@
 package com.example.aicourse.domain.chat.strategy
 
+import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.SystemPrompt
@@ -40,7 +41,10 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             OutPutDataStrategy.None -> null
         }
     }
-    private val contextWindowManager = ContextWindowManager(targetContextWindow = ContextWindow(originalLimit = 8000))
+    private val contextWindowManager = ContextWindowManager(
+        targetContextWindow = ContextWindow(originalLimit = 8000), // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
+        contextRepository = AppInjector.createContextRepository(settingsChatModel)
+    )
     private val messageHistory: MutableList<Message> = mutableListOf()
     private var activeSystemPrompt: SystemPrompt<*> = PlainTextPrompt()
 
@@ -66,10 +70,7 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             prompt = newPrompt,
             message = userMessage.text
         )
-        val historyToSend = prepareHistoryForSending(
-            messageHistory = messageHistory,
-            settingsChatModel = settingsChatModel
-        )
+        val historyToSend = prepareHistoryForSending(message = cleanedMessage)
 
         return DataForSend.RemoteCall(
             message = cleanedMessage,
@@ -88,7 +89,7 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             }
 
             is ContextWindowManager -> {
-                tool.processData(processData = TODO("Поменять аргумент"))
+                tool.processData(processData = DataForReceive.Simple(message = responseMessage, activePrompt = activeSystemPrompt))
             }
 
             else -> null
@@ -174,14 +175,17 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
      * @param settingsChatModel настройка чата
      * @return история для отправки (может быть пустой для некоторых промптов)
      */
-    private fun prepareHistoryForSending(
-        messageHistory: List<Message>,
-        settingsChatModel: SettingsChatModel
-    ): List<Message> {
+    private fun prepareHistoryForSending(message: String): List<Message> {
         return when (settingsChatModel.historyStrategy) {
             HistoryStrategy.PAIN -> messageHistory
             HistoryStrategy.ONE_MESSAGE -> emptyList()
-            HistoryStrategy.SUMMERIZE -> TODO("contextWindowManager")
+            HistoryStrategy.SUMMERIZE -> contextWindowManager.processMessageHistory(
+                DataForSend.RemoteCall(
+                    message = message,
+                    messageHistory = messageHistory,
+                    activePrompt = activeSystemPrompt
+                )
+            )
         }
     }
 

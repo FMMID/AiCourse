@@ -2,17 +2,11 @@ package com.example.aicourse.presentation.chat
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
-import com.example.aicourse.data.chat.local.InMemoryChatDataSource
-import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
-import com.example.aicourse.data.chat.remote.huggingface.HuggingFaceDataSource
-import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
+import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
-import com.example.aicourse.domain.chat.strategy.SimpleChatStrategy
 import com.example.aicourse.domain.chat.usecase.ChatUseCase
-import com.example.aicourse.domain.settings.model.ApiImplementation
-import com.example.aicourse.domain.settings.usecase.SettingsChatUseCase
 import com.example.aicourse.presentation.base.BaseViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -20,8 +14,7 @@ import java.util.UUID
 
 class ChatViewModel(
     application: Application,
-    private val settingsChatUseCase: SettingsChatUseCase = createSettingsUseCase(),
-    private val chatUseCase: ChatUseCase = createChatUseCase(application, settingsChatUseCase),
+    private val chatUseCase: ChatUseCase = AppInjector.createChatUseCase(application),
 ) : BaseViewModel<ChatUiState, ChatIntent>(application, ChatUiState()) {
 
     override fun handleIntent(intent: ChatIntent) {
@@ -109,32 +102,6 @@ class ChatViewModel(
             state.copy(
                 activePrompt = PlainTextPrompt()
             )
-        }
-    }
-
-    companion object {
-        /**
-         * Фабричная функция для создания ChatUseCase с зависимостями
-         * TODO: Заменить на Dependency Injection (Hilt, Koin, и т.д.)
-         */
-        private fun createChatUseCase(application: Application, settingsChatUseCase: SettingsChatUseCase): ChatUseCase {
-            val settingsChatModel = settingsChatUseCase.getSettingsChatModel()
-            val remoteDataSource = when (val apiImplementation = settingsChatModel.currentUseApiImplementation) {
-                ApiImplementation.GIGA_CHAT -> GigaChatDataSource(authorizationKey = apiImplementation.key)
-                ApiImplementation.HUGGING_FACE -> HuggingFaceDataSource(apiToken = apiImplementation.key)
-            }
-            val localDataSource = InMemoryChatDataSource()
-            val repository = ChatRepositoryImpl(
-                context = application,
-                remoteDataSource = remoteDataSource,
-                localDataSource = localDataSource
-            )
-            val simpleDataForSendStrategyImp = SimpleChatStrategy(initSettingsChatModel = settingsChatModel)
-            return ChatUseCase(chatRepository = repository, chatStrategy = simpleDataForSendStrategyImp)
-        }
-
-        private fun createSettingsUseCase(): SettingsChatUseCase {
-            return SettingsChatUseCase()
         }
     }
 }

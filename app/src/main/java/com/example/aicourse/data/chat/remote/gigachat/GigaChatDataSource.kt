@@ -36,7 +36,7 @@ import java.util.UUID
  */
 class GigaChatDataSource(
     private val authorizationKey: String
-) : BaseChatRemoteDataSource(), SummarizeContextDataSource {
+) : BaseChatRemoteDataSource() {
 
     companion object {
         private const val OAUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
