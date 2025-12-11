@@ -8,6 +8,7 @@ import com.example.aicourse.data.chat.remote.gigachat.model.ChatCompletionRespon
 import com.example.aicourse.data.chat.remote.gigachat.model.ChatMessage
 import com.example.aicourse.data.chat.remote.gigachat.model.TokenResponse
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
+import com.example.aicourse.data.tools.context.SummarizeContextDataSource
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.ModelType
 import io.ktor.client.call.body
@@ -35,7 +36,7 @@ import java.util.UUID
  */
 class GigaChatDataSource(
     private val authorizationKey: String
-) : BaseChatRemoteDataSource() {
+) : BaseChatRemoteDataSource(), SummarizeContextDataSource {
 
     companion object {
         private const val OAUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
@@ -165,5 +166,9 @@ class GigaChatDataSource(
             Log.e(logTag, "Error fetching OAuth token", e)
             throw Exception("Ошибка получения токена авторизации: ${e.message}", e)
         }
+    }
+
+    override suspend fun summarizeContext(messageHistory: String): String {
+        TODO("Not yet implemented")
     }
 }

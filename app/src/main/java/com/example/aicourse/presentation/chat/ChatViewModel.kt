@@ -6,6 +6,7 @@ import com.example.aicourse.data.chat.local.InMemoryChatDataSource
 import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
 import com.example.aicourse.data.chat.remote.huggingface.HuggingFaceDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
+import com.example.aicourse.domain.chat.strategy.SimpleDataForSendStrategyImp
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
@@ -22,8 +23,6 @@ class ChatViewModel(
     private val settingsChatUseCase: SettingsChatUseCase = createSettingsUseCase(),
     private val chatUseCase: ChatUseCase = createChatUseCase(application, settingsChatUseCase),
 ) : BaseViewModel<ChatUiState, ChatIntent>(application, ChatUiState()) {
-
-    private var settingsChatModel = settingsChatUseCase.getSettingsChatModel()
 
     override fun handleIntent(intent: ChatIntent) {
         when (intent) {
@@ -59,7 +58,6 @@ class ChatViewModel(
                 message = text,
                 currentPrompt = _uiState.value.activePrompt,
                 messageHistory = _uiState.value.messages,
-                settingsChatModel = settingsChatModel,
             )
                 .onSuccess { complexBotMessage ->
                     _uiState.update { state ->
@@ -127,12 +125,17 @@ class ChatViewModel(
         private fun createChatUseCase(application: Application, settingsChatUseCase: SettingsChatUseCase): ChatUseCase {
             val settingsChatModel = settingsChatUseCase.getSettingsChatModel()
             val remoteDataSource = when (val apiImplementation = settingsChatModel.currentUseApiImplementation) {
-                ApiImplementation.GIGA_CHAT -> GigaChatDataSource(apiImplementation.key)
-                ApiImplementation.HUGGING_FACE -> HuggingFaceDataSource(apiImplementation.key)
+                ApiImplementation.GIGA_CHAT -> GigaChatDataSource(authorizationKey = apiImplementation.key)
+                ApiImplementation.HUGGING_FACE -> HuggingFaceDataSource(apiToken = apiImplementation.key)
             }
             val localDataSource = InMemoryChatDataSource()
-            val repository = ChatRepositoryImpl(application, remoteDataSource, localDataSource)
-            return ChatUseCase(repository)
+            val repository = ChatRepositoryImpl(
+                context = application,
+                remoteDataSource = remoteDataSource,
+                localDataSource = localDataSource
+            )
+            val simpleDataForSendStrategyImp = SimpleDataForSendStrategyImp(initSettingsChatModel = settingsChatModel)
+            return ChatUseCase(chatRepository = repository, prepareDataForSendStrategy = simpleDataForSendStrategyImp)
         }
 
         private fun createSettingsUseCase(): SettingsChatUseCase {

@@ -7,6 +7,7 @@ import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionR
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionResponse
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatMessage
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
+import com.example.aicourse.data.tools.context.SummarizeContextDataSource
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.ModelType
 import io.ktor.client.call.body
@@ -28,7 +29,7 @@ import kotlinx.coroutines.withContext
  */
 class HuggingFaceDataSource(
     private val apiToken: String
-) : BaseChatRemoteDataSource() {
+) : BaseChatRemoteDataSource(), SummarizeContextDataSource {
 
     companion object {
         private const val CHAT_API_URL = "https://router.huggingface.co/v1/chat/completions"
@@ -122,5 +123,9 @@ class HuggingFaceDataSource(
             Log.e(logTag, "Error sending message to HuggingFace", e)
             throw Exception("Ошибка отправки сообщения в HuggingFace: ${e.message}", e)
         }
+    }
+
+    override suspend fun summarizeContext(messageHistory: String): String {
+        TODO("Not yet implemented")
     }
 }
