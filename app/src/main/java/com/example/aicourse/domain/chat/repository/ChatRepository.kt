@@ -32,7 +32,6 @@ interface ChatRepository {
      * @throws Exception если произошла ошибка при отправке/получении
      */
     suspend fun sendMessage(
-        message: String,
         systemPrompt: SystemPrompt<*>,
         messageHistory: List<Message> = emptyList()
     ): Result<SendMessageResult>

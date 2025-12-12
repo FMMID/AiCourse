@@ -23,16 +23,13 @@ class ChatRepositoryImpl(
 ) : ChatRepository {
 
     override suspend fun sendMessage(
-        message: String,
         systemPrompt: SystemPrompt<*>,
         messageHistory: List<Message>
     ): Result<SendMessageResult> = withContext(Dispatchers.IO) {
         try {
-            localDataSource.saveMessage(message, isUser = true)
-
             val resolvedModel = systemPrompt.modelType?.let { modelType -> remoteDataSource.resolveModel(modelType) }
             val config = SystemPromptMapper.toChatConfig(context, systemPrompt, resolvedModel)
-            val rawResponse = remoteDataSource.sendMessage(message, config, messageHistory)
+            val rawResponse = remoteDataSource.sendMessage(config, messageHistory)
             val botResponse = systemPrompt.parseResponse(rawResponse.content)
             localDataSource.saveMessage(botResponse.rawContent, isUser = false)
 

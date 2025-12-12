@@ -2,6 +2,8 @@ package com.example.aicourse.data.chat.remote
 
 import android.util.Log
 import com.example.aicourse.data.tools.context.SummarizeContextDataSource
+import com.example.aicourse.domain.chat.model.Message
+import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
@@ -75,31 +77,38 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
      * @param messageHistory отформатированная история сообщений для суммаризации
      * @return суммаризированный текст
      */
-    override suspend fun summarizeContext(messageHistory: String): ContextSummaryInfo = withContext(Dispatchers.IO) {
-        try {
-            val summary = sendSummarizationRequest(
-                systemPrompt = SUMMARIZATION_SYSTEM_PROMPT.trimIndent(),
-                userMessage = messageHistory,
-                temperature = SUMMARIZATION_TEMPERATURE,
-                topP = SUMMARIZATION_TOP_P,
-                maxTokens = SUMMARIZATION_MAX_TOKENS
-            )
+    override suspend fun summarizeContext(messageHistory: List<Message>, existContextSummary: ContextSummaryInfo?): ContextSummaryInfo =
+        withContext(Dispatchers.IO) {
+            try {
+                val systemPrompt = if (existContextSummary != null) {
+                    SUMMARIZATION_SYSTEM_PROMPT.trimIndent().plus("\nПрошлая выжимка диалога:\n").plus(existContextSummary.message)
+                } else {
+                    SUMMARIZATION_SYSTEM_PROMPT.trimIndent()
+                }
 
-            Log.d(logTag, "Context summarized successfully")
-            return@withContext summary
+                val summary = sendSummarizationRequest(
+                    systemPrompt = systemPrompt,
+                    messageHistory = messageHistory,
+                    temperature = SUMMARIZATION_TEMPERATURE,
+                    topP = SUMMARIZATION_TOP_P,
+                    maxTokens = SUMMARIZATION_MAX_TOKENS
+                )
 
-        } catch (e: Exception) {
-            Log.e(logTag, "Error summarizing context", e)
-            throw Exception("Ошибка суммаризации контекста: ${e.message}", e)
+                Log.d(logTag, "Context summarized successfully")
+                return@withContext summary
+
+            } catch (e: Exception) {
+                Log.e(logTag, "Error summarizing context", e)
+                throw Exception("Ошибка суммаризации контекста: ${e.message}", e)
+            }
         }
-    }
 
     /**
      * Отправляет запрос на суммаризацию к конкретному провайдеру
      * Каждый провайдер реализует этот метод используя свой формат API
      *
      * @param systemPrompt системный промпт для суммаризации
-     * @param userMessage история сообщений для суммаризации
+     * @param messageHistory история сообщений для суммаризации
      * @param temperature параметр температуры модели
      * @param topP параметр top-p модели
      * @param maxTokens максимальное количество токенов в ответе
@@ -107,7 +116,7 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
      */
     protected abstract suspend fun sendSummarizationRequest(
         systemPrompt: String,
-        userMessage: String,
+        messageHistory: List<Message>,
         temperature: Double,
         topP: Double,
         maxTokens: Int
@@ -130,23 +139,16 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
      * @param T тип сообщения провайдера
      * @param systemContent системный промпт (может быть null)
      * @param messageHistory история предыдущих сообщений
-     * @param currentMessage текущее сообщение пользователя
-     * @param maxHistoryMessages максимальное количество сообщений из истории
      * @param roleSystem константа для роли "system"
-     * @param roleUser константа для роли "user"
      * @param messageTypeToRole функция конвертации MessageType в роль провайдера
      * @return список сообщений для API запроса
      */
     protected fun <T> buildMessagesList(
         systemContent: String?,
-        messageHistory: List<com.example.aicourse.domain.chat.model.Message>,
-        currentMessage: String,
-        maxHistoryMessages: Int,
+        messageHistory: List<Message>,
         roleSystem: String,
-        roleUser: String,
-        messageTypeToRole: (com.example.aicourse.domain.chat.model.MessageType) -> String
+        messageTypeToRole: (MessageType) -> String
     ): List<T> {
-        val recentHistory = messageHistory.takeLast(maxHistoryMessages)
 
         return buildList {
             // Добавляем system prompt если есть
@@ -155,12 +157,9 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
             }
 
             // Добавляем историю сообщений
-            recentHistory.forEach { msg ->
+            messageHistory.forEach { msg ->
                 add(createMessage(messageTypeToRole(msg.type), msg.text))
             }
-
-            // Добавляем текущее сообщение пользователя
-            add(createMessage(roleUser, currentMessage))
         }
     }
 

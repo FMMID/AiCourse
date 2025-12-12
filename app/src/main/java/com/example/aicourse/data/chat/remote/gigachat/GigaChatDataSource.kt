@@ -43,7 +43,6 @@ class GigaChatDataSource(
         private const val CHAT_API_URL = "https://gigachat.devices.sberbank.ru/api/v1"
         private const val DEFAULT_MODEL = "GigaChat"
         private const val SCOPE = "GIGACHAT_API_PERS"
-        private const val MAX_HISTORY_MESSAGES = 40
     }
 
     override val logTag: String = "GigaChatDataSource"
@@ -71,7 +70,6 @@ class GigaChatDataSource(
     }
 
     override suspend fun sendMessage(
-        message: String,
         config: ChatConfig,
         messageHistory: List<Message>
     ): ChatResponseData = withContext(Dispatchers.IO) {
@@ -81,10 +79,7 @@ class GigaChatDataSource(
             val messages: List<ChatMessage> = buildMessagesList(
                 systemContent = config.systemContent,
                 messageHistory = messageHistory,
-                currentMessage = message,
-                maxHistoryMessages = MAX_HISTORY_MESSAGES,
                 roleSystem = ChatMessage.ROLE_SYSTEM,
-                roleUser = ChatMessage.ROLE_USER,
                 messageTypeToRole = ChatMessage::fromMessageType
             )
 
@@ -163,16 +158,18 @@ class GigaChatDataSource(
 
     override suspend fun sendSummarizationRequest(
         systemPrompt: String,
-        userMessage: String,
+        messageHistory: List<Message>,
         temperature: Double,
         topP: Double,
         maxTokens: Int
     ): ContextSummaryInfo = withContext(Dispatchers.IO) {
         val token = getValidToken()
 
-        val messages = listOf(
-            ChatMessage(role = ChatMessage.ROLE_SYSTEM, content = systemPrompt),
-            ChatMessage(role = ChatMessage.ROLE_USER, content = userMessage)
+        val messages = buildMessagesList<ChatMessage>(
+            systemContent = systemPrompt,
+            messageHistory = messageHistory,
+            roleSystem = ChatMessage.ROLE_SYSTEM,
+            messageTypeToRole = ChatMessage::fromMessageType
         )
 
         val request = ChatCompletionRequest(

@@ -49,7 +49,7 @@ class ContextWindowManager(
         val needSummary = targetContextWindow.shouldSummarizeDialog(totalTokens)
 
         if (needSummary && messageBuffer.size > targetContextWindow.keepLastMessagesNumber) {
-            return performSummarization(systemPromptSize)
+            return performSummarization(dataForSend.activePrompt, systemPromptSize)
         }
 
         // Суммаризация не нужна
@@ -69,23 +69,15 @@ class ContextWindowManager(
      * Выполняет суммаризацию части истории сообщений
      * Оставляет 5 последних сообщений без изменений
      */
-    private suspend fun performSummarization(systemPromptSize: Int): List<Message> {
+    private suspend fun performSummarization(activePrompt: SystemPrompt<*>, systemPromptSize: Int): List<Message> {
         try {
             val messagesToSummarize = messageBuffer.dropLast(targetContextWindow.keepLastMessagesNumber)
             val messagesToRetain = messageBuffer.takeLast(targetContextWindow.keepLastMessagesNumber)
 
             // Вызываем API для суммаризации
-            val newSummary = contextRepository.summarizeContext(messagesToSummarize)
+            val newSummary = contextRepository.summarizeContext(messagesToSummarize, contextSummary)
 
-            // Комбинируем с предыдущей суммаризацией если есть
-            contextSummary = if (contextSummary.message.isNotEmpty()) {
-                ContextSummaryInfo(
-                    message = "ПРЕДЫДУЩИЙ КОНТЕКСТ:\n${contextSummary.message}\n\nНОВЫЕ СООБЩЕНИЯ:\n${newSummary.message}",
-                    totalTokens = contextSummary.totalTokens + newSummary.totalTokens
-                )
-            } else {
-                newSummary
-            }
+            contextSummary = newSummary
 
             // Обновляем messageBuffer
             messageBuffer.clear()
@@ -101,6 +93,8 @@ class ContextWindowManager(
                 sizeOfActiveMessages = activeMessagesSize,
                 sizeOfSystemPrompt = systemPromptSize
             )
+
+            activePrompt.contextSummary = contextSummary.message
 
             // Устанавливаем флаг успешной суммаризации
             lastOperationWasSummarized = true

@@ -13,7 +13,6 @@ sealed interface DataForSend {
     ) : DataForSend
 
     class RemoteCall(
-        val message: String,
         val messageHistory: List<Message> = emptyList(),
         override val activePrompt: SystemPrompt<*>
     ) : DataForSend

@@ -3,11 +3,13 @@ package com.example.aicourse.data.chat.remote.huggingface
 import android.util.Log
 import com.example.aicourse.data.chat.remote.BaseChatRemoteDataSource
 import com.example.aicourse.data.chat.remote.ChatConfig
+import com.example.aicourse.data.chat.remote.gigachat.model.ChatMessage
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionRequest
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionResponse
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatMessage
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
 import com.example.aicourse.domain.chat.model.Message
+import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.model.ModelType
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import io.ktor.client.call.body
@@ -57,7 +59,6 @@ class HuggingFaceDataSource(
     }
 
     override suspend fun sendMessage(
-        message: String,
         config: ChatConfig,
         messageHistory: List<Message>
     ): ChatResponseData = withContext(Dispatchers.IO) {
@@ -65,10 +66,7 @@ class HuggingFaceDataSource(
             val messages: List<HfChatMessage> = buildMessagesList(
                 systemContent = config.systemContent,
                 messageHistory = messageHistory,
-                currentMessage = message,
-                maxHistoryMessages = MAX_HISTORY_MESSAGES,
                 roleSystem = HfChatMessage.ROLE_SYSTEM,
-                roleUser = HfChatMessage.ROLE_USER,
                 messageTypeToRole = HfChatMessage::fromMessageType
             )
 
@@ -111,14 +109,17 @@ class HuggingFaceDataSource(
 
     override suspend fun sendSummarizationRequest(
         systemPrompt: String,
-        userMessage: String,
+        messageHistory: List<Message>,
         temperature: Double,
         topP: Double,
         maxTokens: Int
     ): ContextSummaryInfo = withContext(Dispatchers.IO) {
-        val messages = listOf(
-            HfChatMessage(role = HfChatMessage.ROLE_SYSTEM, content = systemPrompt),
-            HfChatMessage(role = HfChatMessage.ROLE_USER, content = userMessage)
+
+        val messages = buildMessagesList<HfChatMessage>(
+            systemContent = systemPrompt,
+            messageHistory = messageHistory,
+            roleSystem = HfChatMessage.ROLE_SYSTEM,
+            messageTypeToRole = HfChatMessage::fromMessageType
         )
 
         val request = HfChatCompletionRequest(

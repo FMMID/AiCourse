@@ -10,19 +10,12 @@ class ContextRepositoryImp(
     private val summarizeContextDataSource: SummarizeContextDataSource
 ) : ContextRepository {
 
-    override suspend fun summarizeContext(messageHistory: List<Message>): ContextSummaryInfo {
-        // Форматируем историю сообщений в строку для суммаризации
-        val formattedHistory = messageHistory.joinToString(separator = "\n\n") { message ->
-            val role = when (message.type) {
-                MessageType.USER -> "Пользователь"
-                MessageType.BOT -> "Ассистент"
-                MessageType.SYSTEM -> "Система"
-            }
-            "$role: ${message.text}"
-        }
-
+    override suspend fun summarizeContext(
+        messageHistory: List<Message>,
+        existContextSummary: ContextSummaryInfo?
+    ): ContextSummaryInfo {
         // Вызываем API для суммаризации
-        val contextSummaryInfo = summarizeContextDataSource.summarizeContext(formattedHistory)
+        val contextSummaryInfo = summarizeContextDataSource.summarizeContext(messageHistory, existContextSummary)
 
         return if (contextSummaryInfo.totalTokens == 0) {
             val estimatedTokens = TokenEstimator.estimateTokenCount(contextSummaryInfo.message)

@@ -5,5 +5,5 @@ import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 
 interface ContextRepository {
 
-    suspend fun summarizeContext(messageHistory: List<Message>): ContextSummaryInfo
+    suspend fun summarizeContext(messageHistory: List<Message>, existContextSummary: ContextSummaryInfo? =null): ContextSummaryInfo
 }

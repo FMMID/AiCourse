@@ -30,7 +30,7 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
 
     private val contextWindowManager = ContextWindowManager(
         targetContextWindow = ContextWindow(
-            originalLimit = 10000,
+            originalLimit = 2000,
             keepLastMessagesNumber = 2,
             summaryThreshold = 0.3f
         ), // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
@@ -54,8 +54,6 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
     private var activeSystemPrompt: SystemPrompt<*> = PlainTextPrompt()
 
     override suspend fun prepareData(userMessage: Message): DataForSend {
-        messageHistory.add(userMessage)
-
         val newPrompt = extractSystemPromptFromContent(
             content = userMessage.text,
             currentPrompt = activeSystemPrompt
@@ -65,6 +63,7 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
 
         val localResponseMessage = handleLocalMessage(message = userMessage.text)
         if (localResponseMessage != null) {
+            messageHistory.add(userMessage)
             return DataForSend.LocalResponse(
                 responseMessage = localResponseMessage,
                 activePrompt = activeSystemPrompt
@@ -75,6 +74,7 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             prompt = newPrompt,
             message = userMessage.text
         )
+        messageHistory.add(userMessage)
         val historyToSend = prepareHistoryForSending(message = cleanedMessage)
 
         // Если используется SUMMARIZE стратегия, обновляем промпт с суммаризацией
@@ -83,7 +83,6 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
         }
 
         return DataForSend.RemoteCall(
-            message = cleanedMessage,
             messageHistory = historyToSend,
             activePrompt = activeSystemPrompt
         )
@@ -193,7 +192,6 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             HistoryStrategy.ONE_MESSAGE -> emptyList()
             HistoryStrategy.SUMMARIZE -> contextWindowManager.processMessageHistory(
                 DataForSend.RemoteCall(
-                    message = message,
                     messageHistory = messageHistory,
                     activePrompt = activeSystemPrompt
                 )

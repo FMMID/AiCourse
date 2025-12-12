@@ -37,7 +37,6 @@ class ChatUseCase(
 
             is DataForSend.RemoteCall -> {
                 val sendMessageResult = chatRepository.sendMessage(
-                    message = dataForSend.message,
                     systemPrompt = dataForSend.activePrompt,
                     messageHistory = dataForSend.messageHistory
                 )
