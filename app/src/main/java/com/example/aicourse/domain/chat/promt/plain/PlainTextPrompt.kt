@@ -1,5 +1,6 @@
 package com.example.aicourse.domain.chat.promt.plain
 
+import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 
 /**
@@ -12,7 +13,8 @@ data class PlainTextPrompt(
     override val temperature: Float = 0.7f,
     override val topP: Float = 0.1f,
     override val maxTokens: Int = 1024,
-    override val contentResourceId: Int? = null
+    override val contentResourceId: Int = R.raw.test_dnd_promt,
+    override var contextSummary: String? = null
 ) : SystemPrompt<PlainTextResponse> {
 
     /**

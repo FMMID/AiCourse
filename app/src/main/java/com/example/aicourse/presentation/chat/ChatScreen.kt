@@ -85,8 +85,8 @@ fun ChatScreen(
                 ActivePromptIndicator(
                     activePrompt = uiState.activePrompt,
                     onReset = { viewModel.handleIntent(ChatIntent.ResetPrompt) },
-                    tokenUsage = uiState.lastTokenUsage,
-                    modelName = uiState.lastModelName,
+                    tokenUsage = uiState.messages.lastOrNull()?.tokenUsage,
+                    toolResult = uiState.messages.lastOrNull()?.toolResult,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = dimensionResource(R.dimen.spacing_normal))

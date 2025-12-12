@@ -19,7 +19,6 @@ interface ChatRemoteDataSource {
      * @throws Exception если произошла ошибка сети или API
      */
     suspend fun sendMessage(
-        message: String,
         config: ChatConfig,
         messageHistory: List<Message> = emptyList()
     ): ChatResponseData

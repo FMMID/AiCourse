@@ -27,6 +27,7 @@ class DynamicTemperaturePrompt(
 
     override val topP: Float = 0.9f
     override val maxTokens: Int = 2048
+    override var contextSummary: String? = null
 
     /**
      * Текущее значение температуры

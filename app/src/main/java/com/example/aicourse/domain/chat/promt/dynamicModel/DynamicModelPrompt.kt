@@ -26,6 +26,7 @@ class DynamicModelPrompt(
     override val topP: Float = 0.9f
     override val maxTokens: Int = 2048
     override val contentResourceId: Int = R.raw.dynamic_model_prompt
+    override var contextSummary: String? = null
 
     override val modelType: ModelType?
         get() = currentModelType

@@ -10,6 +10,7 @@ import com.example.aicourse.data.chat.remote.gigachat.model.TokenResponse
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.ModelType
+import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.header
@@ -42,7 +43,6 @@ class GigaChatDataSource(
         private const val CHAT_API_URL = "https://gigachat.devices.sberbank.ru/api/v1"
         private const val DEFAULT_MODEL = "GigaChat"
         private const val SCOPE = "GIGACHAT_API_PERS"
-        private const val MAX_HISTORY_MESSAGES = 40
     }
 
     override val logTag: String = "GigaChatDataSource"
@@ -64,35 +64,24 @@ class GigaChatDataSource(
         }
     }
 
+    override fun <T> createMessage(role: String, content: String): T {
+        @Suppress("UNCHECKED_CAST")
+        return ChatMessage(role = role, content = content) as T
+    }
+
     override suspend fun sendMessage(
-        message: String,
         config: ChatConfig,
         messageHistory: List<Message>
     ): ChatResponseData = withContext(Dispatchers.IO) {
         try {
             val token = getValidToken()
-            val recentHistory = messageHistory.takeLast(MAX_HISTORY_MESSAGES)
-            val messages = buildList {
-                config.systemContent?.let { systemContent ->
-                    add(
-                        ChatMessage(
-                            role = ChatMessage.ROLE_SYSTEM,
-                            content = systemContent
-                        )
-                    )
-                }
 
-                recentHistory.forEach { msg ->
-                    add(ChatMessage(role = ChatMessage.fromMessageType(msg.type), content = msg.text))
-                }
-
-                add(
-                    ChatMessage(
-                        role = ChatMessage.ROLE_USER,
-                        content = message
-                    )
-                )
-            }
+            val messages: List<ChatMessage> = buildMessagesList(
+                systemContent = config.systemContent,
+                messageHistory = messageHistory,
+                roleSystem = ChatMessage.ROLE_SYSTEM,
+                messageTypeToRole = ChatMessage::fromMessageType
+            )
 
             val request = ChatCompletionRequest(
                 model = config.model ?: DEFAULT_MODEL,
@@ -165,5 +154,42 @@ class GigaChatDataSource(
             Log.e(logTag, "Error fetching OAuth token", e)
             throw Exception("Ошибка получения токена авторизации: ${e.message}", e)
         }
+    }
+
+    override suspend fun sendSummarizationRequest(
+        systemPrompt: String,
+        messageHistory: List<Message>,
+        temperature: Double,
+        topP: Double,
+        maxTokens: Int
+    ): ContextSummaryInfo = withContext(Dispatchers.IO) {
+        val token = getValidToken()
+
+        val messages = buildMessagesList<ChatMessage>(
+            systemContent = systemPrompt,
+            messageHistory = messageHistory,
+            roleSystem = ChatMessage.ROLE_SYSTEM,
+            messageTypeToRole = ChatMessage::fromMessageType
+        )
+
+        val request = ChatCompletionRequest(
+            model = DEFAULT_MODEL,
+            messages = messages,
+            temperature = temperature,
+            topP = topP,
+            maxTokens = maxTokens
+        )
+
+        val response: ChatCompletionResponse = httpClient.post("$CHAT_API_URL/chat/completions") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
+        val summary = response.choices.firstOrNull()?.message?.content
+            ?: throw Exception("Пустой ответ от GigaChat API при суммаризации")
+
+        Log.d(logTag, "Summarization completed, tokens: ${response.usage?.totalTokens}")
+        return@withContext ContextSummaryInfo(summary, response.usage?.totalTokens ?: 0)
     }
 }

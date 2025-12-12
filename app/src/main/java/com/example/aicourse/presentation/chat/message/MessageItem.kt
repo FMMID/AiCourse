@@ -15,12 +15,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.model.TokenUsageDiff
 import com.example.aicourse.domain.chat.promt.json.JsonOutputResponse
 import com.example.aicourse.domain.chat.promt.pc.PcBuildResponse
+import com.example.aicourse.domain.tools.context.model.ContextWindowInfo
+import com.example.aicourse.domain.tools.tokenComparePrevious.model.TokenUsageDiff
+import com.example.aicourse.presentation.chat.message.contextStats.ContextWindowCard
 import com.example.aicourse.presentation.chat.message.jsonOutput.JsonOutputCard
 import com.example.aicourse.presentation.chat.message.pcBuild.PcBuildCard
 import com.example.aicourse.presentation.chat.message.plainText.PlainTextCard
+import com.example.aicourse.presentation.chat.message.system.SystemMessageCard
 import com.example.aicourse.presentation.chat.message.tokenStats.TokenStatisticsCard
 import com.example.aicourse.ui.theme.AiCourseTheme
 
@@ -38,6 +41,12 @@ fun MessageItem(
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
+        // Проверяем, системное ли это сообщение
+        if (message.type == MessageType.SYSTEM) {
+            SystemMessageCard(text = message.text)
+            return
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -69,11 +78,24 @@ fun MessageItem(
             }
         }
 
-        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.maxAvailableTokens != null) {
+        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.maxAvailableTokens != null && message.toolResult is TokenUsageDiff) {
             TokenStatisticsCard(
                 tokenUsage = message.tokenUsage,
-                contextLimit = message.tokenUsage.maxAvailableTokens,
-                diff = message.tokenUsageDiff ?: TokenUsageDiff(),
+                diff = message.toolResult,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = dimensionResource(R.dimen.message_item_padding_horizontal),
+                        end = dimensionResource(R.dimen.message_item_padding_horizontal),
+                        bottom = dimensionResource(R.dimen.message_item_padding_vertical)
+                    )
+            )
+        }
+
+        // Отображение ContextWindowCard
+        if (!isUser && message.toolResult is ContextWindowInfo) {
+            ContextWindowCard(
+                contextWindowInfo = message.toolResult,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(

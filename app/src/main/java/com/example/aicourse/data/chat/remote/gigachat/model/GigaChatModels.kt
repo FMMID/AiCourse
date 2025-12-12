@@ -47,6 +47,7 @@ data class ChatMessage(
             return when(messageType) {
                 MessageType.USER -> ROLE_USER
                 MessageType.BOT -> ROLE_ASSISTANT
+                MessageType.SYSTEM -> ROLE_SYSTEM
             }
         }
     }
