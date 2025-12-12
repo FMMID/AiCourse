@@ -8,9 +8,9 @@ import com.example.aicourse.data.chat.remote.gigachat.model.ChatCompletionRespon
 import com.example.aicourse.data.chat.remote.gigachat.model.ChatMessage
 import com.example.aicourse.data.chat.remote.gigachat.model.TokenResponse
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
-import com.example.aicourse.data.tools.context.SummarizeContextDataSource
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.ModelType
+import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.header
@@ -167,7 +167,7 @@ class GigaChatDataSource(
         temperature: Double,
         topP: Double,
         maxTokens: Int
-    ): String = withContext(Dispatchers.IO) {
+    ): ContextSummaryInfo = withContext(Dispatchers.IO) {
         val token = getValidToken()
 
         val messages = listOf(
@@ -193,6 +193,6 @@ class GigaChatDataSource(
             ?: throw Exception("Пустой ответ от GigaChat API при суммаризации")
 
         Log.d(logTag, "Summarization completed, tokens: ${response.usage?.totalTokens}")
-        return@withContext summary
+        return@withContext ContextSummaryInfo(summary, response.usage?.totalTokens ?: 0)
     }
 }

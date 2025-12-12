@@ -1,6 +1,7 @@
 package com.example.aicourse.domain.chat.model
 
 import com.example.aicourse.domain.chat.promt.BotResponse
+import com.example.aicourse.domain.tools.ToolResult
 
 /**
  * Модель сообщения в чате
@@ -10,7 +11,7 @@ import com.example.aicourse.domain.chat.promt.BotResponse
  * @param timestamp время создания
  * @param typedResponse типизированный ответ для продвинутого отображения (только для BOT)
  * @param tokenUsage статистика использования токенов (только для BOT)
- * @param tokenUsageDiff разница в использовании токенов с предыдущим сообщением (только для BOT)
+ * @param toolResult результат работы инструментов (только для BOT)
  */
 data class Message(
     val id: String,
@@ -19,6 +20,7 @@ data class Message(
     val timestamp: Long = System.currentTimeMillis(),
     val typedResponse: BotResponse? = null,
     val tokenUsage: TokenUsage? = null,
+    val toolResult: ToolResult? = null,
 )
 
 enum class MessageType {

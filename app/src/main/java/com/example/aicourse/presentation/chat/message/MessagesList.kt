@@ -20,14 +20,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 @Composable
 fun MessagesList(
     modifier: Modifier = Modifier,
     messages: List<Message> = emptyList(),
-    toolResult: ToolResult? = null,
     isLoading: Boolean = false,
     listState: LazyListState = rememberLazyListState()
 ) {
@@ -44,7 +42,7 @@ fun MessagesList(
             items = messages,
             key = { message -> message.id }
         ) { message ->
-            MessageItem(message = message, toolResult = toolResult)
+            MessageItem(message = message)
         }
 
         if (isLoading) {

@@ -2,6 +2,7 @@ package com.example.aicourse.domain.tools.context
 
 import android.util.Log
 import com.example.aicourse.domain.chat.model.Message
+import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.promt.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.promt.pc.BuildComputerAssistantPrompt
@@ -20,14 +21,6 @@ class ContextWindowManager(
     private val contextRepository: ContextRepository
 ) : Tool<DataForReceive.Simple> {
 
-    companion object {
-        /**
-         * Максимальный размер буфера сообщений
-         * Предотвращает неограниченный рост буфера в памяти
-         */
-        private const val MAX_BUFFER_SIZE = 100
-    }
-
     private var messageBuffer: MutableList<Message> = mutableListOf()
     private var contextSummary: ContextSummaryInfo = ContextSummaryInfo(message = "", totalTokens = 0)
     private var contextInfo: ContextInfo = ContextInfo(sizeOfSummaryMessages = 0, sizeOfActiveMessages = 0, sizeOfSystemPrompt = 0)
@@ -41,8 +34,11 @@ class ContextWindowManager(
      */
     suspend fun processMessageHistory(dataForSend: DataForSend.RemoteCall): List<Message> {
         // 1. Обновляем messageBuffer с ограничением размера
-        messageBuffer.clear()
-        messageBuffer.addAll(dataForSend.messageHistory.takeLast(MAX_BUFFER_SIZE))
+        if (messageBuffer.isEmpty()) {
+            messageBuffer.addAll(dataForSend.messageHistory)
+        } else {
+            messageBuffer.add(dataForSend.messageHistory.last())
+        }
 
         // 2. Вычисляем размеры
         val systemPromptSize = estimateSystemPromptSize(dataForSend.activePrompt)
@@ -52,7 +48,7 @@ class ContextWindowManager(
         val totalTokens = contextSummary.totalTokens + activeMessagesSize + systemPromptSize
         val needSummary = targetContextWindow.shouldSummarizeDialog(totalTokens)
 
-        if (needSummary && messageBuffer.size > 5) {
+        if (needSummary && messageBuffer.size > targetContextWindow.keepLastMessagesNumber) {
             return performSummarization(systemPromptSize)
         }
 
@@ -75,9 +71,8 @@ class ContextWindowManager(
      */
     private suspend fun performSummarization(systemPromptSize: Int): List<Message> {
         try {
-            val messagesToKeep = 5
-            val messagesToSummarize = messageBuffer.dropLast(messagesToKeep)
-            val messagesToRetain = messageBuffer.takeLast(messagesToKeep)
+            val messagesToSummarize = messageBuffer.dropLast(targetContextWindow.keepLastMessagesNumber)
+            val messagesToRetain = messageBuffer.takeLast(targetContextWindow.keepLastMessagesNumber)
 
             // Вызываем API для суммаризации
             val newSummary = contextRepository.summarizeContext(messagesToSummarize)
@@ -131,6 +126,7 @@ class ContextWindowManager(
      */
     override fun processData(processData: DataForReceive.Simple): ToolResult {
         val botMessage = processData.message
+        messageBuffer.add(botMessage)
 
         // Обновляем размер активных сообщений
         val messageTokens = botMessage.tokenUsage?.totalTokens
@@ -190,7 +186,11 @@ class ContextWindowManager(
      */
     private fun calculateMessagesTokenSize(messages: List<Message>): Int {
         return messages.sumOf { message ->
-            message.tokenUsage?.totalTokens ?: TokenEstimator.estimateTokenCount(message.text)
+            if (message.type == MessageType.BOT) {
+                message.tokenUsage?.totalTokens ?: TokenEstimator.estimateTokenCount(message.text)
+            } else {
+                0
+            }
         }
     }
 

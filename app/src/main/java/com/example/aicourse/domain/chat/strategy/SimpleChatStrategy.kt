@@ -29,7 +29,11 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
     override val settingsChatModel: SettingsChatModel = initSettingsChatModel
 
     private val contextWindowManager = ContextWindowManager(
-        targetContextWindow = ContextWindow(originalLimit = 1000), // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
+        targetContextWindow = ContextWindow(
+            originalLimit = 10000,
+            keepLastMessagesNumber = 2,
+            summaryThreshold = 0.3f
+        ), // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
         contextRepository = AppInjector.createContextRepository(settingsChatModel)
     )
     private val activeTool: Tool<*>? = run {
@@ -87,7 +91,6 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
 
     override suspend fun processReceivedData(sendMessageResult: SendMessageResult): DataForReceive {
         val responseMessage = sendMessageResult.toMessage()
-        messageHistory.add(responseMessage)
 
         val toolResult = when (val tool = activeTool) {
             is TokenCompareManager -> {
@@ -101,8 +104,12 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             else -> null
         }
 
+        // Создаем финальное сообщение с toolResult
+        val finalMessage = responseMessage.copy(toolResult = toolResult)
+        messageHistory.add(finalMessage)
+
         return DataForReceive.Simple(
-            message = responseMessage,
+            message = finalMessage,
             activePrompt = activeSystemPrompt,
             toolResult = toolResult
         )

@@ -22,14 +22,16 @@ class ContextRepositoryImp(
         }
 
         // Вызываем API для суммаризации
-        val summaryText = summarizeContextDataSource.summarizeContext(formattedHistory)
+        val contextSummaryInfo = summarizeContextDataSource.summarizeContext(formattedHistory)
 
-        // Подсчитываем токены в суммаризации используя TokenEstimator
-        val estimatedTokens = TokenEstimator.estimateTokenCount(summaryText)
-
-        return ContextSummaryInfo(
-            message = summaryText,
-            totalTokens = estimatedTokens
-        )
+        return if (contextSummaryInfo.totalTokens == 0) {
+            val estimatedTokens = TokenEstimator.estimateTokenCount(contextSummaryInfo.message)
+            ContextSummaryInfo(
+                message = contextSummaryInfo.message,
+                totalTokens = estimatedTokens
+            )
+        } else {
+            contextSummaryInfo
+        }
     }
 }

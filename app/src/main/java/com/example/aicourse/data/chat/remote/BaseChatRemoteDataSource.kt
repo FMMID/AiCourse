@@ -2,6 +2,7 @@ package com.example.aicourse.data.chat.remote
 
 import android.util.Log
 import com.example.aicourse.data.tools.context.SummarizeContextDataSource
+import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -37,7 +38,7 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
          */
         const val SUMMARIZATION_TEMPERATURE = 0.3
         const val SUMMARIZATION_TOP_P = 0.1
-        const val SUMMARIZATION_MAX_TOKENS = 2048
+        const val SUMMARIZATION_MAX_TOKENS = 1024
     }
 
     /**
@@ -74,7 +75,7 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
      * @param messageHistory отформатированная история сообщений для суммаризации
      * @return суммаризированный текст
      */
-    override suspend fun summarizeContext(messageHistory: String): String = withContext(Dispatchers.IO) {
+    override suspend fun summarizeContext(messageHistory: String): ContextSummaryInfo = withContext(Dispatchers.IO) {
         try {
             val summary = sendSummarizationRequest(
                 systemPrompt = SUMMARIZATION_SYSTEM_PROMPT.trimIndent(),
@@ -110,7 +111,7 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
         temperature: Double,
         topP: Double,
         maxTokens: Int
-    ): String
+    ): ContextSummaryInfo
 
     /**
      * Фабричный метод для создания сообщения конкретного провайдера

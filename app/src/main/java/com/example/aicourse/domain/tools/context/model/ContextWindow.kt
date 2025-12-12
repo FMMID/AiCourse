@@ -8,6 +8,7 @@ package com.example.aicourse.domain.tools.context.model
  */
 data class ContextWindow(
     val originalLimit: Int,
+    val keepLastMessagesNumber: Int,
     val summaryThreshold: Float = 0.8f
 ) {
 

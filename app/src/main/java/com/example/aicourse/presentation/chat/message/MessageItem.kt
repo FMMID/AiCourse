@@ -17,7 +17,6 @@ import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.json.JsonOutputResponse
 import com.example.aicourse.domain.chat.promt.pc.PcBuildResponse
-import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.domain.tools.context.model.ContextWindowInfo
 import com.example.aicourse.domain.tools.tokenComparePrevious.model.TokenUsageDiff
 import com.example.aicourse.presentation.chat.message.contextStats.ContextWindowCard
@@ -31,7 +30,6 @@ import com.example.aicourse.ui.theme.AiCourseTheme
 @Composable
 fun MessageItem(
     message: Message,
-    toolResult: ToolResult? = null,
     modifier: Modifier = Modifier
 ) {
     val isUser = message.type == MessageType.USER
@@ -80,10 +78,10 @@ fun MessageItem(
             }
         }
 
-        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.maxAvailableTokens != null && toolResult is TokenUsageDiff) {
+        if (!isUser && message.tokenUsage?.hasData() == true && message.tokenUsage.maxAvailableTokens != null && message.toolResult is TokenUsageDiff) {
             TokenStatisticsCard(
                 tokenUsage = message.tokenUsage,
-                diff = toolResult,
+                diff = message.toolResult,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
@@ -95,9 +93,9 @@ fun MessageItem(
         }
 
         // Отображение ContextWindowCard
-        if (!isUser && toolResult is ContextWindowInfo) {
+        if (!isUser && message.toolResult is ContextWindowInfo) {
             ContextWindowCard(
-                contextWindowInfo = toolResult,
+                contextWindowInfo = message.toolResult,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(

@@ -9,6 +9,7 @@ import com.example.aicourse.data.chat.remote.huggingface.model.HfChatMessage
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.ModelType
+import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import io.ktor.client.call.body
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -114,7 +115,7 @@ class HuggingFaceDataSource(
         temperature: Double,
         topP: Double,
         maxTokens: Int
-    ): String = withContext(Dispatchers.IO) {
+    ): ContextSummaryInfo = withContext(Dispatchers.IO) {
         val messages = listOf(
             HfChatMessage(role = HfChatMessage.ROLE_SYSTEM, content = systemPrompt),
             HfChatMessage(role = HfChatMessage.ROLE_USER, content = userMessage)
@@ -141,6 +142,6 @@ class HuggingFaceDataSource(
             ?: throw Exception("Пустой ответ от HuggingFace API при суммаризации")
 
         Log.d(logTag, "Summarization completed, tokens: ${response.usage?.totalTokens}")
-        return@withContext summary
+        return@withContext ContextSummaryInfo(summary, response.usage?.totalTokens ?: 0)
     }
 }

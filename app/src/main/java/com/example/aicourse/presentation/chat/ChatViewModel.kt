@@ -55,7 +55,6 @@ class ChatViewModel(
                             isLoading = false,
                             error = null,
                             activePrompt = complexBotMessage.systemPrompt,
-                            toolResult = complexBotMessage.toolResult,
                         )
                     }
                 }
