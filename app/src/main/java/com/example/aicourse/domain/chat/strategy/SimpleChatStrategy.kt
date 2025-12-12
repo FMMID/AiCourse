@@ -27,7 +27,12 @@ import java.util.UUID
 class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrategy {
 
     override val settingsChatModel: SettingsChatModel = initSettingsChatModel
-    private var activeTool: Tool<*>? = run {
+
+    private val contextWindowManager = ContextWindowManager(
+        targetContextWindow = ContextWindow(originalLimit = 1000), // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
+        contextRepository = AppInjector.createContextRepository(settingsChatModel)
+    )
+    private val activeTool: Tool<*>? = run {
         when (val outPutStrategy = initSettingsChatModel.outPutDataStrategy) {
             is OutPutDataStrategy.ModelInfo -> ModelInfoManager()
 
@@ -41,10 +46,6 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             OutPutDataStrategy.None -> null
         }
     }
-    private val contextWindowManager = ContextWindowManager(
-        targetContextWindow = ContextWindow(originalLimit = 8000), // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
-        contextRepository = AppInjector.createContextRepository(settingsChatModel)
-    )
     private val messageHistory: MutableList<Message> = mutableListOf()
     private var activeSystemPrompt: SystemPrompt<*> = PlainTextPrompt()
 
@@ -71,6 +72,11 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             message = userMessage.text
         )
         val historyToSend = prepareHistoryForSending(message = cleanedMessage)
+
+        // Если используется SUMMARIZE стратегия, обновляем промпт с суммаризацией
+        if (settingsChatModel.historyStrategy == HistoryStrategy.SUMMARIZE) {
+            contextWindowManager.updatePromptWithSummary(activeSystemPrompt)
+        }
 
         return DataForSend.RemoteCall(
             message = cleanedMessage,
@@ -171,15 +177,14 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
      * Формирует историю сообщений для отправки к API на основе активного промпта
      * Некоторые промпты могут не использовать историю
      *
-     * @param messageHistory полная история сообщений
-     * @param settingsChatModel настройка чата
+     * @param message текущее сообщение для отправки
      * @return история для отправки (может быть пустой для некоторых промптов)
      */
-    private fun prepareHistoryForSending(message: String): List<Message> {
+    private suspend fun prepareHistoryForSending(message: String): List<Message> {
         return when (settingsChatModel.historyStrategy) {
             HistoryStrategy.PAIN -> messageHistory
             HistoryStrategy.ONE_MESSAGE -> emptyList()
-            HistoryStrategy.SUMMERIZE -> contextWindowManager.processMessageHistory(
+            HistoryStrategy.SUMMARIZE -> contextWindowManager.processMessageHistory(
                 DataForSend.RemoteCall(
                     message = message,
                     messageHistory = messageHistory,

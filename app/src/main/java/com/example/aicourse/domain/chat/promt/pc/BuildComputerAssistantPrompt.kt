@@ -20,6 +20,7 @@ class BuildComputerAssistantPrompt : SystemPrompt<PcBuildResponse> {
     override val topP: Float = 0.9f
     override val maxTokens: Int = 4096
     override val contentResourceId: Int = R.raw.build_computer_assistant_prompt
+    override var contextSummary: String? = null
 
     companion object {
         private val COMMAND_TRIGGERS = listOf("/build", "/pc")

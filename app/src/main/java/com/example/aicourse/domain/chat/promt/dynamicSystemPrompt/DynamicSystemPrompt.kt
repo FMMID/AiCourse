@@ -32,6 +32,7 @@ class DynamicSystemPrompt(
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f
     override val maxTokens: Int = 2048
+    override var contextSummary: String? = null
 
     private val availablePrompts: List<InternalPromptConfig> = listOf(
         InternalPromptConfig(

@@ -50,42 +50,26 @@ class HuggingFaceDataSource(
         }
     }
 
+    override fun <T> createMessage(role: String, content: String): T {
+        @Suppress("UNCHECKED_CAST")
+        return HfChatMessage(role = role, content = content) as T
+    }
+
     override suspend fun sendMessage(
         message: String,
         config: ChatConfig,
         messageHistory: List<Message>
     ): ChatResponseData = withContext(Dispatchers.IO) {
         try {
-            val recentHistory = messageHistory.takeLast(MAX_HISTORY_MESSAGES)
-            val messages = buildList {
-                // Добавляем system prompt если есть
-                config.systemContent?.let { systemContent ->
-                    add(
-                        HfChatMessage(
-                            role = HfChatMessage.ROLE_SYSTEM,
-                            content = systemContent
-                        )
-                    )
-                }
-
-                // Добавляем историю сообщений
-                recentHistory.forEach { msg ->
-                    add(
-                        HfChatMessage(
-                            role = HfChatMessage.fromMessageType(msg.type),
-                            content = msg.text
-                        )
-                    )
-                }
-
-                // Добавляем текущее сообщение пользователя
-                add(
-                    HfChatMessage(
-                        role = HfChatMessage.ROLE_USER,
-                        content = message
-                    )
-                )
-            }
+            val messages: List<HfChatMessage> = buildMessagesList(
+                systemContent = config.systemContent,
+                messageHistory = messageHistory,
+                currentMessage = message,
+                maxHistoryMessages = MAX_HISTORY_MESSAGES,
+                roleSystem = HfChatMessage.ROLE_SYSTEM,
+                roleUser = HfChatMessage.ROLE_USER,
+                messageTypeToRole = HfChatMessage::fromMessageType
+            )
 
             val request = HfChatCompletionRequest(
                 model = config.model ?: DEFAULT_MODEL,
@@ -124,7 +108,39 @@ class HuggingFaceDataSource(
         }
     }
 
-    override suspend fun summarizeContext(messageHistory: String): String {
-        TODO("Not yet implemented")
+    override suspend fun sendSummarizationRequest(
+        systemPrompt: String,
+        userMessage: String,
+        temperature: Double,
+        topP: Double,
+        maxTokens: Int
+    ): String = withContext(Dispatchers.IO) {
+        val messages = listOf(
+            HfChatMessage(role = HfChatMessage.ROLE_SYSTEM, content = systemPrompt),
+            HfChatMessage(role = HfChatMessage.ROLE_USER, content = userMessage)
+        )
+
+        val request = HfChatCompletionRequest(
+            model = DEFAULT_MODEL,
+            messages = messages,
+            temperature = temperature,
+            topP = topP,
+            maxTokens = maxTokens,
+            stream = false
+        )
+
+        Log.d(logTag, "Sending summarization request to HuggingFace API")
+
+        val response: HfChatCompletionResponse = httpClient.post(CHAT_API_URL) {
+            header(HttpHeaders.Authorization, "Bearer $apiToken")
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
+        val summary = response.choices.firstOrNull()?.message?.content
+            ?: throw Exception("Пустой ответ от HuggingFace API при суммаризации")
+
+        Log.d(logTag, "Summarization completed, tokens: ${response.usage?.totalTokens}")
+        return@withContext summary
     }
 }

@@ -18,10 +18,13 @@ import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.json.JsonOutputResponse
 import com.example.aicourse.domain.chat.promt.pc.PcBuildResponse
 import com.example.aicourse.domain.tools.ToolResult
+import com.example.aicourse.domain.tools.context.model.ContextWindowInfo
 import com.example.aicourse.domain.tools.tokenComparePrevious.model.TokenUsageDiff
+import com.example.aicourse.presentation.chat.message.contextStats.ContextWindowCard
 import com.example.aicourse.presentation.chat.message.jsonOutput.JsonOutputCard
 import com.example.aicourse.presentation.chat.message.pcBuild.PcBuildCard
 import com.example.aicourse.presentation.chat.message.plainText.PlainTextCard
+import com.example.aicourse.presentation.chat.message.system.SystemMessageCard
 import com.example.aicourse.presentation.chat.message.tokenStats.TokenStatisticsCard
 import com.example.aicourse.ui.theme.AiCourseTheme
 
@@ -40,6 +43,12 @@ fun MessageItem(
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
+        // Проверяем, системное ли это сообщение
+        if (message.type == MessageType.SYSTEM) {
+            SystemMessageCard(text = message.text)
+            return
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -75,6 +84,20 @@ fun MessageItem(
             TokenStatisticsCard(
                 tokenUsage = message.tokenUsage,
                 diff = toolResult,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = dimensionResource(R.dimen.message_item_padding_horizontal),
+                        end = dimensionResource(R.dimen.message_item_padding_horizontal),
+                        bottom = dimensionResource(R.dimen.message_item_padding_vertical)
+                    )
+            )
+        }
+
+        // Отображение ContextWindowCard
+        if (!isUser && toolResult is ContextWindowInfo) {
+            ContextWindowCard(
+                contextWindowInfo = toolResult,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(

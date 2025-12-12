@@ -15,6 +15,7 @@ object SystemPromptMapper {
     /**
      * Конвертирует SystemPrompt в ChatConfig для использования в data layer
      * Читает содержимое промпта из ресурсов, если указан contentResourceId
+     * Объединяет базовый системный промпт с contextSummary, если таковой имеется
      *
      * @param context Android context для доступа к ресурсам
      * @param systemPrompt domain модель промпта
@@ -26,15 +27,25 @@ object SystemPromptMapper {
         systemPrompt: SystemPrompt<*>,
         resolvedModel: String? = null
     ): ChatConfig {
-        val systemContent = systemPrompt.contentResourceId?.let { resourceId ->
+        val baseContent = systemPrompt.contentResourceId?.let { resourceId ->
             readRawResource(context, resourceId)
+        }
+
+        // Объединяем базовый контент с контекстной суммаризацией
+        val fullSystemContent = when {
+            baseContent != null && systemPrompt.contextSummary != null -> {
+                "$baseContent\n\nКОНТЕКСТ ДИАЛОГА:\n${systemPrompt.contextSummary}"
+            }
+            baseContent != null -> baseContent
+            systemPrompt.contextSummary != null -> "КОНТЕКСТ ДИАЛОГА:\n${systemPrompt.contextSummary}"
+            else -> null
         }
 
         return ChatConfig(
             temperature = systemPrompt.temperature,
             topP = systemPrompt.topP,
             maxTokens = systemPrompt.maxTokens,
-            systemContent = systemContent,
+            systemContent = fullSystemContent,
             model = resolvedModel
         )
     }

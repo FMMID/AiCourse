@@ -23,5 +23,6 @@ data class Message(
 
 enum class MessageType {
     USER,
-    BOT
+    BOT,
+    SYSTEM  // Системные сообщения о событиях сжатия контекста и т.д.
 }

@@ -9,5 +9,5 @@ enum class HistoryStrategy {
     ONE_MESSAGE,
 
     //TODO в этом режиме работает "ужимка" старой части беседы, для поддержания актулаьности контекстного окна
-    SUMMERIZE
+    SUMMARIZE
 }

@@ -65,6 +65,11 @@ class GigaChatDataSource(
         }
     }
 
+    override fun <T> createMessage(role: String, content: String): T {
+        @Suppress("UNCHECKED_CAST")
+        return ChatMessage(role = role, content = content) as T
+    }
+
     override suspend fun sendMessage(
         message: String,
         config: ChatConfig,
@@ -72,28 +77,16 @@ class GigaChatDataSource(
     ): ChatResponseData = withContext(Dispatchers.IO) {
         try {
             val token = getValidToken()
-            val recentHistory = messageHistory.takeLast(MAX_HISTORY_MESSAGES)
-            val messages = buildList {
-                config.systemContent?.let { systemContent ->
-                    add(
-                        ChatMessage(
-                            role = ChatMessage.ROLE_SYSTEM,
-                            content = systemContent
-                        )
-                    )
-                }
 
-                recentHistory.forEach { msg ->
-                    add(ChatMessage(role = ChatMessage.fromMessageType(msg.type), content = msg.text))
-                }
-
-                add(
-                    ChatMessage(
-                        role = ChatMessage.ROLE_USER,
-                        content = message
-                    )
-                )
-            }
+            val messages: List<ChatMessage> = buildMessagesList(
+                systemContent = config.systemContent,
+                messageHistory = messageHistory,
+                currentMessage = message,
+                maxHistoryMessages = MAX_HISTORY_MESSAGES,
+                roleSystem = ChatMessage.ROLE_SYSTEM,
+                roleUser = ChatMessage.ROLE_USER,
+                messageTypeToRole = ChatMessage::fromMessageType
+            )
 
             val request = ChatCompletionRequest(
                 model = config.model ?: DEFAULT_MODEL,
@@ -168,7 +161,38 @@ class GigaChatDataSource(
         }
     }
 
-    override suspend fun summarizeContext(messageHistory: String): String {
-        TODO("Not yet implemented")
+    override suspend fun sendSummarizationRequest(
+        systemPrompt: String,
+        userMessage: String,
+        temperature: Double,
+        topP: Double,
+        maxTokens: Int
+    ): String = withContext(Dispatchers.IO) {
+        val token = getValidToken()
+
+        val messages = listOf(
+            ChatMessage(role = ChatMessage.ROLE_SYSTEM, content = systemPrompt),
+            ChatMessage(role = ChatMessage.ROLE_USER, content = userMessage)
+        )
+
+        val request = ChatCompletionRequest(
+            model = DEFAULT_MODEL,
+            messages = messages,
+            temperature = temperature,
+            topP = topP,
+            maxTokens = maxTokens
+        )
+
+        val response: ChatCompletionResponse = httpClient.post("$CHAT_API_URL/chat/completions") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
+        val summary = response.choices.firstOrNull()?.message?.content
+            ?: throw Exception("Пустой ответ от GigaChat API при суммаризации")
+
+        Log.d(logTag, "Summarization completed, tokens: ${response.usage?.totalTokens}")
+        return@withContext summary
     }
 }
