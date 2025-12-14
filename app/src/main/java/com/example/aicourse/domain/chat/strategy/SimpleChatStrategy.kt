@@ -1,6 +1,7 @@
 package com.example.aicourse.domain.chat.strategy
 
 import com.example.aicourse.di.AppInjector
+import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.SystemPrompt
@@ -15,7 +16,6 @@ import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
 import com.example.aicourse.domain.settings.model.HistoryStrategy
 import com.example.aicourse.domain.settings.model.OutPutDataStrategy
-import com.example.aicourse.domain.settings.model.SettingsChatModel
 import com.example.aicourse.domain.settings.model.TokenConsumptionMode
 import com.example.aicourse.domain.tools.Tool
 import com.example.aicourse.domain.tools.context.ContextWindowManager
@@ -24,9 +24,9 @@ import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
 import com.example.aicourse.domain.tools.tokenComparePrevious.TokenCompareManager
 import java.util.UUID
 
-class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrategy {
+class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
 
-    override val settingsChatModel: SettingsChatModel = initSettingsChatModel
+    override var chatStateModel: ChatStateModel = initChatStateModel
 
     private val contextWindowManager = ContextWindowManager(
         targetContextWindow = ContextWindow(
@@ -34,10 +34,10 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             keepLastMessagesNumber = 2,
             summaryThreshold = 0.3f
         ), // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
-        contextRepository = AppInjector.createContextRepository(settingsChatModel)
+        contextRepository = AppInjector.createContextRepository(chatStateModel.settingsChatModel)
     )
     private val activeTool: Tool<*>? = run {
-        when (val outPutStrategy = initSettingsChatModel.outPutDataStrategy) {
+        when (val outPutStrategy = chatStateModel.settingsChatModel.outPutDataStrategy) {
             is OutPutDataStrategy.ModelInfo -> ModelInfoManager()
 
             is OutPutDataStrategy.Token -> {
@@ -50,46 +50,50 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             OutPutDataStrategy.None -> null
         }
     }
-    private val messageHistory: MutableList<Message> = mutableListOf()
-    private var activeSystemPrompt: SystemPrompt<*> = PlainTextPrompt()
 
     override suspend fun prepareData(userMessage: Message): DataForSend {
+        chatStateModel.chatMessages.add(userMessage)
+
         val newPrompt = extractSystemPromptFromContent(
             content = userMessage.text,
-            currentPrompt = activeSystemPrompt
-        ) ?: activeSystemPrompt
+            currentPrompt = chatStateModel.activeSystemPrompt
+        ) ?: chatStateModel.activeSystemPrompt
+        chatStateModel.activeSystemPrompt = newPrompt
 
-        activeSystemPrompt = newPrompt
-
-        val localResponseMessage = handleLocalMessage(message = userMessage.text)
+        val localResponseMessage = handleLocalMessage(message = userMessage.text, activeSystemPrompt = chatStateModel.activeSystemPrompt)
         if (localResponseMessage != null) {
-            messageHistory.add(userMessage)
+            chatStateModel.chatMessages.add(userMessage)
             return DataForSend.LocalResponse(
                 responseMessage = localResponseMessage,
-                activePrompt = activeSystemPrompt
+                activePrompt = chatStateModel.activeSystemPrompt
             )
         }
 
-        val cleanedMessage = prepareMessageForSending(
+        val cleanedMessageForSendToApi = prepareMessageForSending(
             prompt = newPrompt,
             message = userMessage.text
         )
-        messageHistory.add(userMessage)
-        val historyToSend = prepareHistoryForSending(message = cleanedMessage)
+        chatStateModel.messagesForSendToAi.add(cleanedMessageForSendToApi)
+
+        val historyToSend = prepareHistoryForSending(
+            messageHistory = chatStateModel.messagesForSendToAi,
+            activeSystemPrompt = chatStateModel.activeSystemPrompt
+        )
 
         // Если используется SUMMARIZE стратегия, обновляем промпт с суммаризацией
-        if (settingsChatModel.historyStrategy == HistoryStrategy.SUMMARIZE) {
-            contextWindowManager.updatePromptWithSummary(activeSystemPrompt)
+        if (chatStateModel.settingsChatModel.historyStrategy == HistoryStrategy.SUMMARIZE) {
+            contextWindowManager.updatePromptWithSummary(chatStateModel.activeSystemPrompt)
         }
 
         return DataForSend.RemoteCall(
             messageHistory = historyToSend,
-            activePrompt = activeSystemPrompt
+            activePrompt = chatStateModel.activeSystemPrompt
         )
     }
 
     override suspend fun processReceivedData(sendMessageResult: SendMessageResult): DataForReceive {
         val responseMessage = sendMessageResult.toMessage()
+        chatStateModel.messagesForSendToAi.add(responseMessage)
 
         val toolResult = when (val tool = activeTool) {
             is TokenCompareManager -> {
@@ -97,7 +101,12 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
             }
 
             is ContextWindowManager -> {
-                tool.processData(processData = DataForReceive.Simple(message = responseMessage, activePrompt = activeSystemPrompt))
+                tool.processData(
+                    processData = DataForReceive.Simple(
+                        message = responseMessage,
+                        activePrompt = chatStateModel.activeSystemPrompt
+                    )
+                )
             }
 
             else -> null
@@ -105,29 +114,35 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
 
         // Создаем финальное сообщение с toolResult
         val finalMessage = responseMessage.copy(toolResult = toolResult)
-        messageHistory.add(finalMessage)
+        chatStateModel.chatMessages.add(finalMessage)
 
         return DataForReceive.Simple(
             message = finalMessage,
-            activePrompt = activeSystemPrompt,
+            activePrompt = chatStateModel.activeSystemPrompt,
             toolResult = toolResult
         )
     }
 
     override suspend fun clear() {
         activeTool?.clear()
-        messageHistory.clear()
+        chatStateModel = ChatStateModel(
+            id = chatStateModel.id,
+            settingsChatModel = chatStateModel.settingsChatModel,
+            chatMessages = mutableListOf(),
+            messagesForSendToAi = mutableListOf(),
+            contextSummaryInfo = null,
+            activeSystemPrompt = PlainTextPrompt()
+        )
     }
 
-    private fun handleLocalMessage(message: String): Message? {
+    private fun handleLocalMessage(message: String, activeSystemPrompt: SystemPrompt<*>): Message? {
         val localResponse = activeSystemPrompt.handleMessageLocally(message)
         return localResponse?.let {
             Message(
                 id = UUID.randomUUID().toString(),
                 text = localResponse.rawContent,
-                type = MessageType.BOT,
+                type = MessageType.SYSTEM,
                 typedResponse = localResponse,
-                tokenUsage = null,
             )
         }
     }
@@ -165,8 +180,8 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
      * @param message исходное сообщение пользователя
      * @return обработанное сообщение для отправки
      */
-    private fun prepareMessageForSending(prompt: SystemPrompt<*>, message: String): String {
-        return when (prompt) {
+    private fun prepareMessageForSending(prompt: SystemPrompt<*>, message: String): Message {
+        val correctedMessageString = when (prompt) {
             is DynamicTemperaturePrompt -> {
                 prompt.extractAndCleanMessage(message)
             }
@@ -177,17 +192,24 @@ class SimpleChatStrategy(initSettingsChatModel: SettingsChatModel) : ChatStrateg
 
             else -> message
         }
+
+        val message = Message(
+            id = UUID.randomUUID().toString(),
+            text = correctedMessageString,
+            type = MessageType.USER,
+        )
+
+        return message
     }
 
     /**
      * Формирует историю сообщений для отправки к API на основе активного промпта
      * Некоторые промпты могут не использовать историю
      *
-     * @param message текущее сообщение для отправки
      * @return история для отправки (может быть пустой для некоторых промптов)
      */
-    private suspend fun prepareHistoryForSending(message: String): List<Message> {
-        return when (settingsChatModel.historyStrategy) {
+    private suspend fun prepareHistoryForSending(messageHistory: List<Message>, activeSystemPrompt: SystemPrompt<*>): List<Message> {
+        return when (chatStateModel.settingsChatModel.historyStrategy) {
             HistoryStrategy.PAIN -> messageHistory
             HistoryStrategy.ONE_MESSAGE -> emptyList()
             HistoryStrategy.SUMMARIZE -> contextWindowManager.processMessageHistory(

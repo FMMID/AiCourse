@@ -3,13 +3,11 @@ package com.example.aicourse.data.chat.remote.huggingface
 import android.util.Log
 import com.example.aicourse.data.chat.remote.BaseChatRemoteDataSource
 import com.example.aicourse.data.chat.remote.ChatConfig
-import com.example.aicourse.data.chat.remote.gigachat.model.ChatMessage
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionRequest
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionResponse
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatMessage
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.model.ModelType
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import io.ktor.client.call.body
@@ -36,7 +34,6 @@ class HuggingFaceDataSource(
     companion object {
         private const val CHAT_API_URL = "https://router.huggingface.co/v1/chat/completions"
         private const val DEFAULT_MODEL = "openai/gpt-oss-20b:hyperbolic"
-        private const val MAX_HISTORY_MESSAGES = 40
     }
 
     override val logTag: String = "HuggingFaceDataSource"

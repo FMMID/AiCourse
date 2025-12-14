@@ -1,5 +1,6 @@
 package com.example.aicourse.domain.chat.repository
 
+import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.TokenUsage
 import com.example.aicourse.domain.chat.promt.BotResponse
@@ -37,15 +38,14 @@ interface ChatRepository {
     ): Result<SendMessageResult>
 
     /**
-     * Получает историю сообщений из локального хранилища (если есть)
-     * @return список сообщений
+     * Сохраняет состояние чата в хранилище
      */
-    suspend fun getMessageHistory(): Result<List<String>>
+    suspend fun saveChatSate(chatStateModel: ChatStateModel): Result<Unit>
 
     /**
-     * Сохраняет сообщение в локальное хранилище
+     * Восстанавливает состояние чата из хранилища
      */
-    suspend fun saveMessage(message: String, isUser: Boolean): Result<Unit>
+    suspend fun getChatState(chatId: String): Result<ChatStateModel>
 
     /**
      * Очищает историю сообщений

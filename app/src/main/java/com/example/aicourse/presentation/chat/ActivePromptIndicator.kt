@@ -61,7 +61,7 @@ fun ActivePromptIndicator(
                                 }
                                 if (tokenUsage != null && tokenUsage.hasData()) {
                                     append("\n")
-                                    append("tt: ${tokenUsage.promptTokens ?: 0} - ")
+                                    append("pt: ${tokenUsage.promptTokens ?: 0} - ")
                                     append("ct: ${tokenUsage.completionTokens ?: 0} - ")
                                     append("tt: ${tokenUsage.totalTokens ?: 0}")
                                 }
