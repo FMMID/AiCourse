@@ -2,6 +2,8 @@ package com.example.aicourse.domain.chat.promt.json
 
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.SystemPrompt
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -13,12 +15,13 @@ import org.json.JSONObject
  * Success: { "title": "Основная тема", "body": "Содержимое" }
  * Error: { "error": "Причина ошибки" }
  */
+@Serializable
+@SerialName("json_output")
 data class JsonOutputPrompt(
     override val temperature: Float = 0.5f,
     override val topP: Float = 0.1f,
     override val maxTokens: Int = 1024,
     override val contentResourceId: Int? = R.raw.json_output_prompt,
-    override var contextSummary: String? = null
 ) : SystemPrompt<JsonOutputResponse> {
 
     companion object {

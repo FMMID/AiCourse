@@ -3,6 +3,8 @@ package com.example.aicourse.domain.chat.promt.dynamicTemperature
 import android.util.Log
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.SystemPrompt
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Динамический системный промпт с управлением температурой
@@ -16,10 +18,12 @@ import com.example.aicourse.domain.chat.promt.SystemPrompt
  * - Диапазон температуры: 0-2 (по умолчанию 0)
  * - НЕ передает историю сообщений в запрос к API
  *
- * @param currentSystemPrompt текущий активный промпт (для сохранения состояния)
+ * @param currentTemperature текущее значение температуры (сохраняется между вызовами)
  */
-class DynamicTemperaturePrompt(
-    private val currentSystemPrompt: SystemPrompt<*>
+@Serializable
+@SerialName("dynamic_temperature")
+data class DynamicTemperaturePrompt(
+    private var currentTemperature: Float = DEFAULT_TEMPERATURE
 ) : SystemPrompt<DynamicTemperatureResponse> {
 
     override val temperature: Float
@@ -27,13 +31,6 @@ class DynamicTemperaturePrompt(
 
     override val topP: Float = 0.9f
     override val maxTokens: Int = 2048
-    override var contextSummary: String? = null
-
-    /**
-     * Текущее значение температуры
-     * Сохраняется между вызовами, если уже был активирован DynamicTemperaturePrompt
-     */
-    private var currentTemperature: Float = (currentSystemPrompt as? DynamicTemperaturePrompt)?.temperature ?: DEFAULT_TEMPERATURE
 
     /**
      * ID ресурса с пустым системным промптом (пользователь заполнит сам)
@@ -43,7 +40,7 @@ class DynamicTemperaturePrompt(
     companion object {
         private const val ACTIVATION_TRIGGER = "/dynamic_temp"
         private const val TEMP_COMMAND_PREFIX = "/temp"
-        private const val DEFAULT_TEMPERATURE = 0f
+        const val DEFAULT_TEMPERATURE = 0f
         private const val MIN_TEMPERATURE = 0f
         private const val MAX_TEMPERATURE = 2f
 
@@ -59,26 +56,20 @@ class DynamicTemperaturePrompt(
     /**
      * Проверяет, должен ли DynamicTemperaturePrompt активироваться
      *
-     * Логика:
-     * 1. Если currentSystemPrompt is DynamicTemperaturePrompt (уже в режиме):
-     *    - Возвращаем true (продолжаем работу в режиме)
+     * Логика (после рефакторинга):
+     * - Если /dynamic_temp -> активация с приветствием
+     * - Если /temp [значение] -> активация с установкой температуры
+     * - Иначе -> возвращаем false
      *
-     * 2. Если currentSystemPrompt !is DynamicTemperaturePrompt (не в режиме):
-     *    - Если /dynamic_temp -> активация с приветствием
-     *    - Если /temp [значение] -> активация с установкой температуры
-     *    - Иначе -> возвращаем false
+     * Примечание: проверка "уже в режиме" теперь выполняется в SimpleChatStrategy
      */
     override fun matches(message: String): Boolean {
         val lowerMessage = message.trim().lowercase()
 
-        return if (currentSystemPrompt is DynamicTemperaturePrompt) {
-            true
-        } else {
-            lowerMessage == ACTIVATION_TRIGGER
-                    || lowerMessage.startsWith("$ACTIVATION_TRIGGER ")
-                    || lowerMessage == TEMP_COMMAND_PREFIX
-                    || lowerMessage.startsWith("$TEMP_COMMAND_PREFIX ")
-        }
+        return lowerMessage == ACTIVATION_TRIGGER
+                || lowerMessage.startsWith("$ACTIVATION_TRIGGER ")
+                || lowerMessage == TEMP_COMMAND_PREFIX
+                || lowerMessage.startsWith("$TEMP_COMMAND_PREFIX ")
     }
 
     /**
@@ -92,15 +83,15 @@ class DynamicTemperaturePrompt(
     /**
      * Обрабатывает входящее сообщение локально
      *
-     * Логика:
-     * - Если это первая активация через /dynamic_temp (без команды /temp):
+     * Логика (после рефакторинга):
+     * - Если команда /temp [значение] без сообщения:
+     *   Устанавливаем температуру, возвращаем подтверждение
+     *
+     * - Если команда /temp [значение] [сообщение]:
+     *   Устанавливаем температуру, отправляем к API (возвращаем null)
+     *
+     * - Если это активация /dynamic_temp:
      *   Возвращаем приветственное сообщение
-     *
-     * - Если это первая активация через /temp [значение] [сообщение]:
-     *   Устанавливаем температуру, отправляем к API (без приветствия)
-     *
-     * - Если уже в режиме и команда /temp без сообщения:
-     *   Возвращаем подтверждение установки температуры
      *
      * - Иначе:
      *   Возвращаем null - отправляем сообщение к API
@@ -108,24 +99,19 @@ class DynamicTemperaturePrompt(
     override fun handleMessageLocally(message: String): DynamicTemperatureResponse? {
         val tempCommand = parseTempCommand(message)
 
-        if (currentSystemPrompt !is DynamicTemperaturePrompt) {
-            if (tempCommand != null) {
-                currentTemperature = tempCommand.temperature
-                return if (tempCommand.restMessage.isNullOrBlank()) {
-                    parseResponse("Температура установлена на ${tempCommand.temperature}")
-                } else {
-                    null
-                }
-            }
-            return parseResponse(getWelcomeMessage())
-        }
-
         if (tempCommand != null) {
             currentTemperature = tempCommand.temperature
-
-            if (tempCommand.restMessage.isNullOrBlank()) {
-                return parseResponse("Температура установлена на ${tempCommand.temperature}")
+            return if (tempCommand.restMessage.isNullOrBlank()) {
+                parseResponse("Температура установлена на ${tempCommand.temperature}")
+            } else {
+                null
             }
+        }
+
+        // Если это активационный триггер - показываем welcome message
+        val lowerMessage = message.trim().lowercase()
+        if (lowerMessage == ACTIVATION_TRIGGER || lowerMessage.startsWith("$ACTIVATION_TRIGGER ")) {
+            return parseResponse(getWelcomeMessage())
         }
 
         return null

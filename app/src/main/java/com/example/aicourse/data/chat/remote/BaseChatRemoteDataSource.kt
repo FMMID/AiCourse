@@ -28,11 +28,14 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
          * Используется всеми провайдерами для единообразия результатов
          */
         const val SUMMARIZATION_SYSTEM_PROMPT = """
-                Ниже приведен отрывок диалога. Твоя задача: сжато пересказать его,
-                сохранив все ключевые факты, имена, цифры и договоренности.
-                Игнорируй приветствия и эмоции.
-                Отвечай только пересказом, без дополнительных комментариев.
-            """
+            Твоя задача: сжато пересказать диалог с пользователем, сохранив все ключевые факты, имена, цифры и договоренности.
+            Игнорируй приветствия и эмоции.
+            Отвечай только пересказом, без дополнительных комментариев.
+            
+            Также учитывай и ПРОШЛАЯ_ИСТОРИЯ диалога при пересказе.
+            
+            ПРОШЛАЯ_ИСТОРИЯ: %s
+        """
 
         /**
          * Параметры для суммаризации
@@ -77,31 +80,30 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
      * @param messageHistory отформатированная история сообщений для суммаризации
      * @return суммаризированный текст
      */
-    override suspend fun summarizeContext(messageHistory: List<Message>, existContextSummary: ContextSummaryInfo?): ContextSummaryInfo =
-        withContext(Dispatchers.IO) {
-            try {
-                val systemPrompt = if (existContextSummary != null) {
-                    SUMMARIZATION_SYSTEM_PROMPT.trimIndent().plus("\nПрошлая выжимка диалога:\n").plus(existContextSummary.message)
-                } else {
-                    SUMMARIZATION_SYSTEM_PROMPT.trimIndent()
-                }
+    override suspend fun summarizeContext(
+        messageHistory: List<Message>,
+        existContextSummary: ContextSummaryInfo?
+    ): ContextSummaryInfo = withContext(Dispatchers.IO) {
+        try {
+            val historyToInsert = existContextSummary?.message?.ifBlank { "пусто" } ?:  "пусто"
+            val systemPrompt = SUMMARIZATION_SYSTEM_PROMPT.trimIndent().format(historyToInsert)
 
-                val summary = sendSummarizationRequest(
-                    systemPrompt = systemPrompt,
-                    messageHistory = messageHistory,
-                    temperature = SUMMARIZATION_TEMPERATURE,
-                    topP = SUMMARIZATION_TOP_P,
-                    maxTokens = SUMMARIZATION_MAX_TOKENS
-                )
+            val summary = sendSummarizationRequest(
+                systemPrompt = systemPrompt,
+                messageHistory = messageHistory,
+                temperature = SUMMARIZATION_TEMPERATURE,
+                topP = SUMMARIZATION_TOP_P,
+                maxTokens = SUMMARIZATION_MAX_TOKENS
+            )
 
-                Log.d(logTag, "Context summarized successfully")
-                return@withContext summary
+            Log.d(logTag, "Context summarized successfully")
+            return@withContext summary
 
-            } catch (e: Exception) {
-                Log.e(logTag, "Error summarizing context", e)
-                throw Exception("Ошибка суммаризации контекста: ${e.message}", e)
-            }
+        } catch (e: Exception) {
+            Log.e(logTag, "Error summarizing context", e)
+            throw Exception("Ошибка суммаризации контекста: ${e.message}", e)
         }
+    }
 
     /**
      * Отправляет запрос на суммаризацию к конкретному провайдеру

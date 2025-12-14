@@ -1,5 +1,7 @@
 package com.example.aicourse.domain.chat.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Статистика использования токенов для отображения в UI
  *
@@ -7,6 +9,7 @@ package com.example.aicourse.domain.chat.model
  * @property completionTokens количество токенов в ответе (null если не предоставлено)
  * @property totalTokens общее количество токенов (null если не предоставлено)
  */
+@Serializable
 data class TokenUsage(
     val promptTokens: Int? = null,
     val completionTokens: Int? = null,

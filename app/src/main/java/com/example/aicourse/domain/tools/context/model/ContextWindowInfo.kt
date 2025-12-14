@@ -1,6 +1,8 @@
 package com.example.aicourse.domain.tools.context.model
 
 import com.example.aicourse.domain.tools.ToolResult
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Результат обработки контекстного окна, содержащий статистику использования
@@ -16,6 +18,8 @@ import com.example.aicourse.domain.tools.ToolResult
  * @property wasSummarized флаг, указывающий была ли выполнена суммаризация
  * @property summarizationError сообщение об ошибке при суммаризации (null если ошибок не было)
  */
+@Serializable
+@SerialName("context_window_info")
 data class ContextWindowInfo(
     val contextInfo: ContextInfo,
     val totalUsedTokens: Int,
@@ -39,6 +43,7 @@ data class ContextWindowInfo(
         }
     }
 
+    @Serializable
     enum class ColorLevel {
         GREEN, YELLOW, RED
     }

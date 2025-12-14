@@ -1,6 +1,8 @@
 package com.example.aicourse.domain.tools.tokenComparePrevious.model
 
 import com.example.aicourse.domain.tools.ToolResult
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Разница в использовании токенов между текущим и предыдущим сообщением
@@ -8,6 +10,8 @@ import com.example.aicourse.domain.tools.ToolResult
  * @property completionTokensDiff изменение количества токенов ответа
  * @property totalTokensDiff изменение общего количества токенов
  */
+@Serializable
+@SerialName("token_usage_diff")
 data class TokenUsageDiff(
     val promptTokensDiff: Int = 0,
     val completionTokensDiff: Int = 0,

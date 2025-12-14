@@ -1,115 +1,110 @@
 package com.example.aicourse.domain.tools.context
 
+import android.app.Application
 import android.util.Log
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.SystemPrompt
-import com.example.aicourse.domain.chat.promt.json.JsonOutputPrompt
-import com.example.aicourse.domain.chat.promt.pc.BuildComputerAssistantPrompt
-import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
-import com.example.aicourse.domain.chat.strategy.model.DataForReceive
-import com.example.aicourse.domain.chat.strategy.model.DataForSend
 import com.example.aicourse.domain.tools.Tool
 import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.domain.tools.context.model.ContextInfo
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.domain.tools.context.model.ContextWindow
 import com.example.aicourse.domain.tools.context.model.ContextWindowInfo
+import com.example.aicourse.domain.tools.context.model.HistoryWithSummaryInfo
+import com.example.aicourse.domain.utils.ResourceReader
 
 class ContextWindowManager(
     private val targetContextWindow: ContextWindow,
-    private val contextRepository: ContextRepository
-) : Tool<DataForReceive.Simple> {
+    private val contextRepository: ContextRepository,
+    private val applicationContext: Application
+) : Tool<Message> {
 
-    private var messageBuffer: MutableList<Message> = mutableListOf()
-    private var contextSummary: ContextSummaryInfo = ContextSummaryInfo(message = "", totalTokens = 0)
     private var contextInfo: ContextInfo = ContextInfo(sizeOfSummaryMessages = 0, sizeOfActiveMessages = 0, sizeOfSystemPrompt = 0)
     private var lastSummarizationError: String? = null
     private var lastOperationWasSummarized: Boolean = false
+    private var systemPromptTextSizeMap: MutableMap<Int, Int> = mutableMapOf()
 
     /**
      * Обрабатывает историю сообщений, выполняя суммаризацию при необходимости
      * @param dataForSend данные для отправки, включая историю и активный промпт
      * @return обработанная история сообщений (с возможным сжатием)
      */
-    suspend fun processMessageHistory(dataForSend: DataForSend.RemoteCall): List<Message> {
-        // 1. Обновляем messageBuffer с ограничением размера
-        if (messageBuffer.isEmpty()) {
-            messageBuffer.addAll(dataForSend.messageHistory)
-        } else {
-            messageBuffer.add(dataForSend.messageHistory.last())
-        }
+    suspend fun processMessageHistory(
+        messageHistory: List<Message>,
+        activeSystemPrompt: SystemPrompt<*>,
+        contextSummaryInfo: ContextSummaryInfo?
+    ): HistoryWithSummaryInfo {
+        val systemPromptSize = estimateSystemPromptSize(activeSystemPrompt, contextSummaryInfo)
+        val activeMessagesSize = calculateMessagesTokenSize(messageHistory)
+        val contextSummarySize = contextSummaryInfo?.totalTokens ?: 0
 
-        // 2. Вычисляем размеры
-        val systemPromptSize = estimateSystemPromptSize(dataForSend.activePrompt)
-        val activeMessagesSize = calculateMessagesTokenSize(messageBuffer)
-
-        // 3. Проверяем, нужна ли суммаризация
-        val totalTokens = contextSummary.totalTokens + activeMessagesSize + systemPromptSize
+        val totalTokens = contextSummarySize + activeMessagesSize + systemPromptSize
         val needSummary = targetContextWindow.shouldSummarizeDialog(totalTokens)
 
-        if (needSummary && messageBuffer.size > targetContextWindow.keepLastMessagesNumber) {
-            return performSummarization(dataForSend.activePrompt, systemPromptSize)
+        if (needSummary && messageHistory.size > targetContextWindow.keepLastMessagesNumber) {
+            return performSummarization(messageHistory, contextSummaryInfo, systemPromptSize)
         }
 
-        // Суммаризация не нужна
         lastOperationWasSummarized = false
 
-        // Обновляем contextInfo
         contextInfo = ContextInfo(
-            sizeOfSummaryMessages = contextSummary.totalTokens,
+            sizeOfSummaryMessages = contextSummarySize,
             sizeOfActiveMessages = activeMessagesSize,
             sizeOfSystemPrompt = systemPromptSize
         )
 
-        return messageBuffer
+        return HistoryWithSummaryInfo(
+            messagesForSendToAi = messageHistory,
+            contextSummaryInfo = contextSummaryInfo
+        )
     }
 
     /**
      * Выполняет суммаризацию части истории сообщений
      * Оставляет 5 последних сообщений без изменений
      */
-    private suspend fun performSummarization(activePrompt: SystemPrompt<*>, systemPromptSize: Int): List<Message> {
+    private suspend fun performSummarization(
+        messageHistory: List<Message>,
+        contextSummaryInfo: ContextSummaryInfo?,
+        systemPromptSize: Int
+    ): HistoryWithSummaryInfo {
         try {
-            val messagesToSummarize = messageBuffer.dropLast(targetContextWindow.keepLastMessagesNumber)
-            val messagesToRetain = messageBuffer.takeLast(targetContextWindow.keepLastMessagesNumber)
+            val messagesToSummarize = messageHistory.dropLast(targetContextWindow.keepLastMessagesNumber)
+            val messagesToRetain = messageHistory.takeLast(targetContextWindow.keepLastMessagesNumber)
 
-            // Вызываем API для суммаризации
-            val newSummary = contextRepository.summarizeContext(messagesToSummarize, contextSummary)
+            Log.d(
+                "fed",
+                "messageHistorySize:${messageHistory.size}  messagesToSummarizeSize:${messagesToSummarize.size} messagesToRetain:${messagesToRetain.size} keepLastMessagesNumber:${targetContextWindow.keepLastMessagesNumber}"
+            )
 
-            contextSummary = newSummary
+            val newSummary = contextRepository.summarizeContext(
+                messageHistory = messagesToSummarize,
+                existContextSummary = contextSummaryInfo
+            )
 
-            // Обновляем messageBuffer
-            messageBuffer.clear()
-            messageBuffer.addAll(messagesToRetain)
-
-            // Сбрасываем ошибку после успешной суммаризации
             lastSummarizationError = null
 
-            // Обновляем contextInfo
-            val activeMessagesSize = calculateMessagesTokenSize(messageBuffer)
+            val activeMessagesSize = calculateMessagesTokenSize(messagesToRetain)
             contextInfo = ContextInfo(
-                sizeOfSummaryMessages = contextSummary.totalTokens,
+                sizeOfSummaryMessages = newSummary.totalTokens,
                 sizeOfActiveMessages = activeMessagesSize,
                 sizeOfSystemPrompt = systemPromptSize
             )
 
-            activePrompt.contextSummary = contextSummary.message
-
-            // Устанавливаем флаг успешной суммаризации
             lastOperationWasSummarized = true
 
             Log.d("ContextWindowManager", "Context summarized: ${messagesToSummarize.size} messages compressed")
-            return messagesToRetain
+            return HistoryWithSummaryInfo(messagesForSendToAi = messagesToRetain, contextSummaryInfo = newSummary)
 
         } catch (e: Exception) {
             Log.e("ContextWindowManager", "Summarization failed", e)
-            // Сохраняем ошибку для информирования пользователя
             lastSummarizationError = "Ошибка суммаризации: ${e.message}"
-            // Сбрасываем флаг при ошибке
             lastOperationWasSummarized = false
-            // При ошибке возвращаем все сообщения без сжатия
-            return messageBuffer
+            return HistoryWithSummaryInfo(
+                messagesForSendToAi = messageHistory,
+                contextSummaryInfo = contextSummaryInfo
+            )
         }
     }
 
@@ -118,22 +113,13 @@ class ContextWindowManager(
      * @param processData данные полученного сообщения
      * @return ContextWindowInfo с актуальной статистикой использования контекста
      */
-    override fun processData(processData: DataForReceive.Simple): ToolResult {
-        val botMessage = processData.message
-        messageBuffer.add(botMessage)
-
-        // Обновляем размер активных сообщений
-        val messageTokens = botMessage.tokenUsage?.totalTokens
-            ?: TokenEstimator.estimateTokenCount(botMessage.text)
+    override fun processData(processData: Message): ToolResult {
+        val messageTokens = processData.tokenUsage?.totalTokens ?: TokenEstimator.estimateTokenCount(processData.text)
 
         val updatedActiveSize = contextInfo.sizeOfActiveMessages + messageTokens
         contextInfo = contextInfo.copy(sizeOfActiveMessages = updatedActiveSize)
 
-        // Вычисляем общее использование
-        val totalUsed = contextInfo.sizeOfSummaryMessages +
-                contextInfo.sizeOfActiveMessages +
-                contextInfo.sizeOfSystemPrompt
-
+        val totalUsed = contextInfo.sizeOfSummaryMessages + contextInfo.sizeOfActiveMessages + contextInfo.sizeOfSystemPrompt
         val usagePercentage = totalUsed.toFloat() / targetContextWindow.originalLimit
 
         return ContextWindowInfo(
@@ -151,8 +137,6 @@ class ContextWindowManager(
      * Сбрасывает буферы, суммаризацию и статистику
      */
     override fun clear() {
-        messageBuffer.clear()
-        contextSummary = ContextSummaryInfo(message = "", totalTokens = 0)
         contextInfo = ContextInfo(
             sizeOfSummaryMessages = 0,
             sizeOfActiveMessages = 0,
@@ -161,17 +145,6 @@ class ContextWindowManager(
         lastSummarizationError = null
         lastOperationWasSummarized = false
     }
-
-    /**
-     * Обновляет contextSummary в текущем активном промпте
-     * Вызывается перед отправкой сообщения в API
-     */
-    fun updatePromptWithSummary(prompt: SystemPrompt<*>) {
-        if (contextSummary.message.isNotEmpty()) {
-            prompt.contextSummary = contextSummary.message
-        }
-    }
-
 
     /**
      * Подсчитывает общий размер сообщений в токенах
@@ -192,19 +165,22 @@ class ContextWindowManager(
      * Оценивает размер системного промпта в токенах
      * Учитывает базовый размер промпта и contextSummary
      */
-    private fun estimateSystemPromptSize(systemPrompt: SystemPrompt<*>): Int {
-        // Фиксированные оценки для известных промптов
-        val basePromptSize = when (systemPrompt) {
-            is PlainTextPrompt -> 0
-            is JsonOutputPrompt -> 150
-            is BuildComputerAssistantPrompt -> 300
-            else -> 100
+    private fun estimateSystemPromptSize(
+        activeSystemPrompt: SystemPrompt<*>,
+        contextSummaryInfo: ContextSummaryInfo?
+    ): Int {
+        val resourceId = activeSystemPrompt.contentResourceId
+
+        val textTokens = if (resourceId != null) {
+            systemPromptTextSizeMap.getOrPut(resourceId) {
+                val text = ResourceReader.readRawResource(applicationContext, resourceId)
+                TokenEstimator.estimateTokenCount(text)
+            }
+        } else {
+            0
         }
 
-        val summarySize = systemPrompt.contextSummary?.let {
-            TokenEstimator.estimateTokenCount(it)
-        } ?: 0
-
-        return basePromptSize + summarySize
+        val summaryTokens = contextSummaryInfo?.totalTokens ?: 0
+        return textTokens + summaryTokens
     }
 }

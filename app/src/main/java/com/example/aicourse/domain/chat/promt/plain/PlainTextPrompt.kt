@@ -2,6 +2,8 @@ package com.example.aicourse.domain.chat.promt.plain
 
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.SystemPrompt
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Дефолтный промпт для обычного текстового общения
@@ -9,12 +11,13 @@ import com.example.aicourse.domain.chat.promt.SystemPrompt
  * Это стандартное поведение чата без специальных инструкций
  * Используется как fallback, когда другие промпты не срабатывают
  */
+@Serializable
+@SerialName("plain_text")
 data class PlainTextPrompt(
     override val temperature: Float = 0.7f,
     override val topP: Float = 0.1f,
     override val maxTokens: Int = 1024,
     override val contentResourceId: Int = R.raw.test_dnd_promt,
-    override var contextSummary: String? = null
 ) : SystemPrompt<PlainTextResponse> {
 
     /**

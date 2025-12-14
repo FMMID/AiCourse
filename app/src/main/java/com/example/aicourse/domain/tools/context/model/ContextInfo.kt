@@ -1,5 +1,8 @@
 package com.example.aicourse.domain.tools.context.model
 
+import com.example.aicourse.domain.tools.ToolResult
+import kotlinx.serialization.Serializable
+
 /**
  * Детальная информация о распределении токенов в контекстном окне
  *
@@ -10,8 +13,9 @@ package com.example.aicourse.domain.tools.context.model
  * @property sizeOfActiveMessages количество токенов в активных (несуммаризированных) сообщениях
  * @property sizeOfSystemPrompt количество токенов в системном промпте
  */
+@Serializable
 data class ContextInfo(
     val sizeOfSummaryMessages: Int,
     val sizeOfActiveMessages: Int,
     val sizeOfSystemPrompt: Int
-)
+) : ToolResult

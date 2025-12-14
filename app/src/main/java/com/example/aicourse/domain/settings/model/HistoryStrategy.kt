@@ -1,5 +1,8 @@
 package com.example.aicourse.domain.settings.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class HistoryStrategy {
 
     //TODO используем когда учитывается вся история переписки

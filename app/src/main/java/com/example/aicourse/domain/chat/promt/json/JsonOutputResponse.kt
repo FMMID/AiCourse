@@ -1,11 +1,15 @@
 package com.example.aicourse.domain.chat.promt.json
 
 import com.example.aicourse.domain.chat.promt.BotResponse
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Ответ в формате JSON со структурированными данными
  * Формат ответа: { "title": "...", "body": "..." } или { "error": "..." }
  */
+@Serializable
+@SerialName("json_output")
 data class JsonOutputResponse(
     override val rawContent: String,
     val isValid: Boolean,

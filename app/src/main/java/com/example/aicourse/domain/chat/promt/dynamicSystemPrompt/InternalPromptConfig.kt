@@ -1,5 +1,7 @@
 package com.example.aicourse.domain.chat.promt.dynamicSystemPrompt
 
+import kotlinx.serialization.Serializable
+
 /**
  * Конфигурация внутреннего промпта для DynamicSystemPrompt
  *
@@ -8,6 +10,7 @@ package com.example.aicourse.domain.chat.promt.dynamicSystemPrompt
  * @param triggers список триггеров для активации этого промпта (например, ["/python", "python mode"])
  * @param contentResourceId ID ресурса из res/raw для system content
  */
+@Serializable
 data class InternalPromptConfig(
     val id: String,
     val name: String,

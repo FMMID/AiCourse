@@ -2,6 +2,7 @@ package com.example.aicourse.domain.chat.model
 
 import com.example.aicourse.domain.chat.promt.BotResponse
 import com.example.aicourse.domain.tools.ToolResult
+import kotlinx.serialization.Serializable
 
 /**
  * Модель сообщения в чате
@@ -13,6 +14,7 @@ import com.example.aicourse.domain.tools.ToolResult
  * @param tokenUsage статистика использования токенов (только для BOT)
  * @param toolResult результат работы инструментов (только для BOT)
  */
+@Serializable
 data class Message(
     val id: String,
     val text: String,
@@ -23,6 +25,7 @@ data class Message(
     val toolResult: ToolResult? = null,
 )
 
+@Serializable
 enum class MessageType {
     USER,
     BOT,

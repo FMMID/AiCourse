@@ -1,5 +1,6 @@
 package com.example.aicourse.domain.chat.usecase
 
+import com.example.aicourse.domain.base.BaseUseCase
 import com.example.aicourse.domain.chat.model.ComplexBotMessage
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.repository.ChatRepository
@@ -8,25 +9,18 @@ import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
 
 /**
- * Use Case для работы с чатом
- * Содержит бизнес-логику отправки сообщений
- * Зависит только от интерфейса ChatRepository (Clean Architecture)
+ * Отправляет сообщение боту через репозиторий
+ * Определяет промпт на основе триггеров или использует текущий активный
+ * @param userMessage сообщение пользователя
+ * @return Result с типизированным ответом и новым промптом
  */
-class ChatUseCase(
+class SendMessageChatUseCase(
     private val chatRepository: ChatRepository,
     private val chatStrategy: ChatStrategy
-) {
+) : BaseUseCase<Message, ComplexBotMessage> {
 
-    /**
-     * Отправляет сообщение боту через репозиторий
-     * Определяет промпт на основе триггеров или использует текущий активный
-     * @param userMessage сообщение пользователя
-     * @return Result с типизированным ответом и новым промптом
-     */
-    suspend fun sendMessageToBot(
-        userMessage: Message,
-    ): Result<ComplexBotMessage> {
-        return when (val dataForSend = chatStrategy.prepareData(userMessage)) {
+    override suspend fun invoke(input: Message): Result<ComplexBotMessage> {
+        val chatResult = when (val dataForSend = chatStrategy.prepareData(userMessage = input)) {
             is DataForSend.LocalResponse -> Result.success(
                 ComplexBotMessage(
                     message = dataForSend.responseMessage,
@@ -38,7 +32,8 @@ class ChatUseCase(
             is DataForSend.RemoteCall -> {
                 val sendMessageResult = chatRepository.sendMessage(
                     systemPrompt = dataForSend.activePrompt,
-                    messageHistory = dataForSend.messageHistory
+                    messageHistory = dataForSend.messageHistory,
+                    contextSummaryInfo = dataForSend.contextSummaryInfo
                 )
 
                 sendMessageResult.map { result ->
@@ -54,20 +49,8 @@ class ChatUseCase(
                 }
             }
         }
-    }
 
-    /**
-     * Очищает историю чата
-     */
-    suspend fun clearChatHistory(): Result<Unit> {
-        chatStrategy.clear()
-        return chatRepository.clearHistory()
-    }
-
-    /**
-     * Получает историю сообщений
-     */
-    suspend fun getMessageHistory(): Result<List<String>> {
-        return chatRepository.getMessageHistory()
+        chatRepository.saveChatSate(chatStrategy.chatStateModel)
+        return chatResult
     }
 }

@@ -2,6 +2,8 @@ package com.example.aicourse.domain.chat.promt.pc
 
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.SystemPrompt
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
@@ -14,13 +16,14 @@ import kotlinx.serialization.json.Json
  * Ассистент задает вопросы пользователю о бюджете, целях использования,
  * и в финале предоставляет полную конфигурацию в JSON формате
  */
+@Serializable
+@SerialName("build_computer_assistant")
 class BuildComputerAssistantPrompt : SystemPrompt<PcBuildResponse> {
 
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f
     override val maxTokens: Int = 4096
     override val contentResourceId: Int = R.raw.build_computer_assistant_prompt
-    override var contextSummary: String? = null
 
     companion object {
         private val COMMAND_TRIGGERS = listOf("/build", "/pc")
