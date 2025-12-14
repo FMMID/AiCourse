@@ -77,31 +77,33 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
      * @param messageHistory отформатированная история сообщений для суммаризации
      * @return суммаризированный текст
      */
-    override suspend fun summarizeContext(messageHistory: List<Message>, existContextSummary: ContextSummaryInfo?): ContextSummaryInfo =
-        withContext(Dispatchers.IO) {
-            try {
-                val systemPrompt = if (existContextSummary != null) {
-                    SUMMARIZATION_SYSTEM_PROMPT.trimIndent().plus("\nПрошлая выжимка диалога:\n").plus(existContextSummary.message)
-                } else {
-                    SUMMARIZATION_SYSTEM_PROMPT.trimIndent()
-                }
-
-                val summary = sendSummarizationRequest(
-                    systemPrompt = systemPrompt,
-                    messageHistory = messageHistory,
-                    temperature = SUMMARIZATION_TEMPERATURE,
-                    topP = SUMMARIZATION_TOP_P,
-                    maxTokens = SUMMARIZATION_MAX_TOKENS
-                )
-
-                Log.d(logTag, "Context summarized successfully")
-                return@withContext summary
-
-            } catch (e: Exception) {
-                Log.e(logTag, "Error summarizing context", e)
-                throw Exception("Ошибка суммаризации контекста: ${e.message}", e)
+    override suspend fun summarizeContext(
+        messageHistory: List<Message>,
+        existContextSummary: ContextSummaryInfo?
+    ): ContextSummaryInfo = withContext(Dispatchers.IO) {
+        try {
+            val systemPrompt = if (existContextSummary != null) {
+                SUMMARIZATION_SYSTEM_PROMPT.trimIndent().plus("\n\nПрошлая выжимка диалога:\n").plus(existContextSummary.message)
+            } else {
+                SUMMARIZATION_SYSTEM_PROMPT.trimIndent()
             }
+
+            val summary = sendSummarizationRequest(
+                systemPrompt = systemPrompt,
+                messageHistory = messageHistory,
+                temperature = SUMMARIZATION_TEMPERATURE,
+                topP = SUMMARIZATION_TOP_P,
+                maxTokens = SUMMARIZATION_MAX_TOKENS
+            )
+
+            Log.d(logTag, "Context summarized successfully")
+            return@withContext summary
+
+        } catch (e: Exception) {
+            Log.e(logTag, "Error summarizing context", e)
+            throw Exception("Ошибка суммаризации контекста: ${e.message}", e)
         }
+    }
 
     /**
      * Отправляет запрос на суммаризацию к конкретному провайдеру

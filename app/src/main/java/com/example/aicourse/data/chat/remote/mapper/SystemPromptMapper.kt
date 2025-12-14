@@ -1,10 +1,10 @@
-package com.example.aicourse.data.chat.mapper
+package com.example.aicourse.data.chat.remote.mapper
 
 import android.content.Context
 import com.example.aicourse.data.chat.remote.ChatConfig
 import com.example.aicourse.domain.chat.promt.SystemPrompt
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
+import com.example.aicourse.domain.utils.ResourceReader
 
 /**
  * Маппер для конвертации domain модели SystemPrompt в data модель ChatConfig
@@ -25,19 +25,22 @@ object SystemPromptMapper {
     fun toChatConfig(
         context: Context,
         systemPrompt: SystemPrompt<*>,
-        resolvedModel: String? = null
+        resolvedModel: String? = null,
+        contextSummaryInfo: ContextSummaryInfo? = null
     ): ChatConfig {
-        val baseContent = systemPrompt.contentResourceId?.let { resourceId ->
-            readRawResource(context, resourceId)
+        val baseSystemPrompt = systemPrompt.contentResourceId?.let { resourceId ->
+            ResourceReader.readRawResource(context, resourceId)
         }
 
-        // Объединяем базовый контент с контекстной суммаризацией
         val fullSystemContent = when {
-            baseContent != null && systemPrompt.contextSummary != null -> {
-                "$baseContent\n\nКОНТЕКСТ ДИАЛОГА:\n${systemPrompt.contextSummary}"
+            baseSystemPrompt != null && contextSummaryInfo != null -> {
+                baseSystemPrompt + "\n\n" + "КОНТЕКСТ ДИАЛОГА:\n${contextSummaryInfo.message}"
             }
-            baseContent != null -> baseContent
-            systemPrompt.contextSummary != null -> "КОНТЕКСТ ДИАЛОГА:\n${systemPrompt.contextSummary}"
+
+            baseSystemPrompt != null -> baseSystemPrompt
+
+            contextSummaryInfo != null -> "КОНТЕКСТ ДИАЛОГА:\n${contextSummaryInfo.message}"
+
             else -> null
         }
 
@@ -48,19 +51,5 @@ object SystemPromptMapper {
             systemContent = fullSystemContent,
             model = resolvedModel
         )
-    }
-
-    /**
-     * Читает содержимое текстового файла из res/raw
-     * @param context Android context
-     * @param resourceId ID ресурса из R.raw
-     * @return содержимое файла в виде строки
-     */
-    private fun readRawResource(context: Context, resourceId: Int): String {
-        return context.resources.openRawResource(resourceId).use { inputStream ->
-            BufferedReader(InputStreamReader(inputStream)).use { reader ->
-                reader.readText()
-            }
-        }
     }
 }

@@ -11,7 +11,7 @@ data class ChatStateModel(
     val id: String,
     val settingsChatModel: SettingsChatModel,
     val chatMessages: MutableList<Message>,
-    val messagesForSendToAi: MutableList<Message>,
+    var messagesForSendToAi: MutableList<Message>,
     var contextSummaryInfo: ContextSummaryInfo?, //TODO возможно занести под SettingsChatModel.historyStrategy
     var activeSystemPrompt: SystemPrompt<BotResponse>
 )

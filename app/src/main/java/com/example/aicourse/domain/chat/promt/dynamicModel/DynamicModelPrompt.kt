@@ -22,10 +22,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @SerialName("dynamic_model")
-data class DynamicModelPrompt(
-    private var currentModelType: ModelType? = null,
-    override var contextSummary: String? = null
-) : SystemPrompt<DynamicModelResponse> {
+data class DynamicModelPrompt(private var currentModelType: ModelType? = null) : SystemPrompt<DynamicModelResponse> {
 
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f

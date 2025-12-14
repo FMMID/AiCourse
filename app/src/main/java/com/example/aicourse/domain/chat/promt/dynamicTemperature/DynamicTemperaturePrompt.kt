@@ -23,8 +23,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("dynamic_temperature")
 data class DynamicTemperaturePrompt(
-    private var currentTemperature: Float = DEFAULT_TEMPERATURE,
-    override var contextSummary: String? = null
+    private var currentTemperature: Float = DEFAULT_TEMPERATURE
 ) : SystemPrompt<DynamicTemperatureResponse> {
 
     override val temperature: Float

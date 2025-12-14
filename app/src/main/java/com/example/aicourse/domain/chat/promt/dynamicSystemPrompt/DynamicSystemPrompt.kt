@@ -21,10 +21,7 @@ import kotlinx.serialization.Serializable
 //  переключением разных имплементаций SystemPrompt, что делает эту релизацию бесполезной
 @Serializable
 @SerialName("dynamic_system_prompt")
-data class DynamicSystemPrompt(
-    var activeInternalPrompt: InternalPromptConfig? = null,
-    override var contextSummary: String? = null
-) : SystemPrompt<DynamicSystemPromptResponse> {
+data class DynamicSystemPrompt(var activeInternalPrompt: InternalPromptConfig? = null) : SystemPrompt<DynamicSystemPromptResponse> {
 
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f

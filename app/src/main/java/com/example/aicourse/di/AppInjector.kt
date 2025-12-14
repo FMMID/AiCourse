@@ -94,7 +94,7 @@ object AppInjector {
         val chatStateModel = createChatStateModel(application)
         val repository = createChatRepository(application, chatStateModel.settingsChatModel)
         val simpleDataForSendStrategyImp = chatStrategy ?: run {
-            SimpleChatStrategy(initChatStateModel = chatStateModel)
+            SimpleChatStrategy(initChatStateModel = chatStateModel, applicationContext = application)
         }.also { chatStrategy = it }
 
 
@@ -105,7 +105,7 @@ object AppInjector {
         val chatStateModel = createChatStateModel(application)
         val repository = createChatRepository(application, chatStateModel.settingsChatModel)
         val simpleDataForSendStrategyImp = chatStrategy ?: run {
-            SimpleChatStrategy(initChatStateModel = chatStateModel)
+            SimpleChatStrategy(initChatStateModel = chatStateModel, applicationContext = application)
         }.also { chatStrategy = it }
 
         return ClearHistoryChatUseCase(chatRepository = repository, chatStrategy = simpleDataForSendStrategyImp)

@@ -1,5 +1,6 @@
 package com.example.aicourse.domain.chat.strategy
 
+import android.app.Application
 import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
@@ -19,23 +20,30 @@ import com.example.aicourse.domain.settings.model.OutPutDataStrategy
 import com.example.aicourse.domain.settings.model.TokenConsumptionMode
 import com.example.aicourse.domain.tools.Tool
 import com.example.aicourse.domain.tools.context.ContextWindowManager
+import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.domain.tools.context.model.ContextWindow
 import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
 import com.example.aicourse.domain.tools.tokenComparePrevious.TokenCompareManager
 import java.util.UUID
 
-class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
+class SimpleChatStrategy(
+    initChatStateModel: ChatStateModel,
+    private val applicationContext: Application
+) : ChatStrategy {
 
     override var chatStateModel: ChatStateModel = initChatStateModel
 
     private val contextWindowManager = ContextWindowManager(
+        // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
         targetContextWindow = ContextWindow(
-            originalLimit = 2000,
-            keepLastMessagesNumber = 2,
-            summaryThreshold = 0.3f
-        ), // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
-        contextRepository = AppInjector.createContextRepository(chatStateModel.settingsChatModel)
+            originalLimit = 350,
+            keepLastMessagesNumber = 1,
+            summaryThreshold = 0.4f
+        ),
+        contextRepository = AppInjector.createContextRepository(chatStateModel.settingsChatModel),
+        applicationContext = applicationContext,
     )
+
     private val activeTool: Tool<*>? = run {
         when (val outPutStrategy = chatStateModel.settingsChatModel.outPutDataStrategy) {
             is OutPutDataStrategy.ModelInfo -> ModelInfoManager()
@@ -86,17 +94,14 @@ class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
 
         val historyToSend = prepareHistoryForSending(
             messageHistory = chatStateModel.messagesForSendToAi,
-            activeSystemPrompt = chatStateModel.activeSystemPrompt
+            activeSystemPrompt = chatStateModel.activeSystemPrompt,
+            contextSummaryInfo = chatStateModel.contextSummaryInfo
         )
-
-        // Если используется SUMMARIZE стратегия, обновляем промпт с суммаризацией
-        if (chatStateModel.settingsChatModel.historyStrategy == HistoryStrategy.SUMMARIZE) {
-            contextWindowManager.updatePromptWithSummary(chatStateModel.activeSystemPrompt)
-        }
 
         return DataForSend.RemoteCall(
             messageHistory = historyToSend,
-            activePrompt = chatStateModel.activeSystemPrompt
+            activePrompt = chatStateModel.activeSystemPrompt,
+            contextSummaryInfo = chatStateModel.contextSummaryInfo
         )
     }
 
@@ -110,18 +115,12 @@ class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
             }
 
             is ContextWindowManager -> {
-                tool.processData(
-                    processData = DataForReceive.Simple(
-                        message = responseMessage,
-                        activePrompt = chatStateModel.activeSystemPrompt
-                    )
-                )
+                tool.processData(processData = responseMessage)
             }
 
             else -> null
         }
 
-        // Создаем финальное сообщение с toolResult
         val finalMessage = responseMessage.copy(toolResult = toolResult)
         chatStateModel.chatMessages.add(finalMessage)
 
@@ -221,16 +220,25 @@ class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
      *
      * @return история для отправки (может быть пустой для некоторых промптов)
      */
-    private suspend fun prepareHistoryForSending(messageHistory: List<Message>, activeSystemPrompt: SystemPrompt<*>): List<Message> {
+    private suspend fun prepareHistoryForSending(
+        messageHistory: List<Message>,
+        activeSystemPrompt: SystemPrompt<*>,
+        contextSummaryInfo: ContextSummaryInfo?
+    ): List<Message> {
         return when (chatStateModel.settingsChatModel.historyStrategy) {
             HistoryStrategy.PAIN -> messageHistory
+
             HistoryStrategy.ONE_MESSAGE -> emptyList()
+
             HistoryStrategy.SUMMARIZE -> contextWindowManager.processMessageHistory(
-                DataForSend.RemoteCall(
-                    messageHistory = messageHistory,
-                    activePrompt = activeSystemPrompt
-                )
-            )
+                messageHistory = messageHistory,
+                activeSystemPrompt = activeSystemPrompt,
+                contextSummaryInfo = contextSummaryInfo
+            ).let { historyWithSummaryInfo ->
+                chatStateModel.contextSummaryInfo = historyWithSummaryInfo.contextSummaryInfo
+                chatStateModel.messagesForSendToAi = historyWithSummaryInfo.messagesForSendToAi.toMutableList()
+                historyWithSummaryInfo.messagesForSendToAi
+            }
         }
     }
 
