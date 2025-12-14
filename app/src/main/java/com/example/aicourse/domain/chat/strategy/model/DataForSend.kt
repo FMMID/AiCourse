@@ -8,7 +8,7 @@ sealed interface DataForSend {
     val activePrompt: SystemPrompt<*>
 
     class LocalResponse(
-        val responseMessage: Message,
+        val responseMessage: Message?,
         override val activePrompt: SystemPrompt<*>,
     ) : DataForSend
 

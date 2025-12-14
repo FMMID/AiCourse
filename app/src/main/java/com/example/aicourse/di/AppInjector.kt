@@ -15,19 +15,27 @@ import com.example.aicourse.domain.chat.repository.ChatRepository
 import com.example.aicourse.domain.chat.strategy.ChatStrategy
 import com.example.aicourse.domain.chat.strategy.SimpleChatStrategy
 import com.example.aicourse.domain.chat.usecase.ClearHistoryChatUseCase
+import com.example.aicourse.domain.chat.usecase.GetHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.SendMessageChatUseCase
 import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.model.SettingsChatModel
 import com.example.aicourse.domain.tools.context.ContextRepository
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 // TODO Заменить на Dependency Injection (Hilt, Koin, и т.д.)
 object AppInjector {
 
     val existDataSources: MutableMap<ApiImplementation, BaseChatRemoteDataSource> = mutableMapOf()
+    var inMemoryChatDataBase: InMemoryChatDataSource? = null
     var chatStateModel: ChatStateModel? = null
     var chatStrategy: ChatStrategy? = null
+
+    fun createChatStateModel(): ChatStateModel = runBlocking {
+        inMemoryChatDataBase = inMemoryChatDataBase ?: run { InMemoryChatDataSource() }
+        return@runBlocking chatStateModel ?: run { inMemoryChatDataBase!!.getChatState(MAIN_CHAT_ID) }
+    }
 
     fun createContextRepository(settingsChatModel: SettingsChatModel): ContextRepository {
         val summarizeContextDataSource: SummarizeContextDataSource =
@@ -67,20 +75,30 @@ object AppInjector {
     }
 
     fun createSendMessageChatUseCase(application: Application): SendMessageChatUseCase {
-        val repository = createChatRepository(application, chatStateModel!!.settingsChatModel)
+        val chatStateModel = createChatStateModel()
+        val repository = createChatRepository(application, chatStateModel.settingsChatModel)
         val simpleDataForSendStrategyImp = chatStrategy ?: run {
-            SimpleChatStrategy(initChatStateModel = chatStateModel!!)
+            SimpleChatStrategy(initChatStateModel = chatStateModel)
         }.also { chatStrategy = it }
+
 
         return SendMessageChatUseCase(chatRepository = repository, chatStrategy = simpleDataForSendStrategyImp)
     }
 
     fun createClearHistoryChatUseCase(application: Application): ClearHistoryChatUseCase {
-        val repository = createChatRepository(application, chatStateModel!!.settingsChatModel)
+        val chatStateModel = createChatStateModel()
+        val repository = createChatRepository(application, chatStateModel.settingsChatModel)
         val simpleDataForSendStrategyImp = chatStrategy ?: run {
-            SimpleChatStrategy(initChatStateModel = chatStateModel!!)
+            SimpleChatStrategy(initChatStateModel = chatStateModel)
         }.also { chatStrategy = it }
 
         return ClearHistoryChatUseCase(chatRepository = repository, chatStrategy = simpleDataForSendStrategyImp)
+    }
+
+    fun createGetHistoryChatUseCase(application: Application): GetHistoryChatUseCase {
+        val chatStateModel = createChatStateModel()
+        val repository = createChatRepository(application, chatStateModel.settingsChatModel)
+
+        return GetHistoryChatUseCase(chatRepository = repository)
     }
 }

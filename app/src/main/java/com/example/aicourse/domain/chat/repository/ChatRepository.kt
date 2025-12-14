@@ -2,21 +2,8 @@ package com.example.aicourse.domain.chat.repository
 
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.TokenUsage
-import com.example.aicourse.domain.chat.promt.BotResponse
+import com.example.aicourse.domain.chat.model.SendMessageResult
 import com.example.aicourse.domain.chat.promt.SystemPrompt
-
-/**
- * Результат отправки сообщения с метаданными
- * @property botResponse типизированный ответ бота
- * @property tokenUsage статистика использования токенов
- * @property modelName имя использованной модели
- */
-data class SendMessageResult(
-    val botResponse: BotResponse,
-    val tokenUsage: TokenUsage? = null,
-    val modelName: String? = null
-)
 
 /**
  * Интерфейс репозитория для работы с чатом

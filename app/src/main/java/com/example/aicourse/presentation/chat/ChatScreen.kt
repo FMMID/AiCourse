@@ -1,5 +1,6 @@
 package com.example.aicourse.presentation.chat
 
+import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 import com.example.aicourse.presentation.chat.message.MessagesList
+import com.example.aicourse.presentation.chat.mvi.ChatIntent
+import com.example.aicourse.presentation.chat.mvi.ChatViewModel
+import com.example.aicourse.presentation.chat.mvi.ChatViewModelFactory
 import com.example.aicourse.presentation.uiKit.MessageInputField
 import com.example.aicourse.ui.theme.AiCourseTheme
 
@@ -39,7 +43,7 @@ import com.example.aicourse.ui.theme.AiCourseTheme
 fun ChatScreen(
     viewModel: ChatViewModel = viewModel(
         factory = ChatViewModelFactory(
-            LocalContext.current.applicationContext as android.app.Application
+            LocalContext.current.applicationContext as Application
         )
     )
 ) {
@@ -84,7 +88,6 @@ fun ChatScreen(
             if (uiState.activePrompt !is PlainTextPrompt) {
                 ActivePromptIndicator(
                     activePrompt = uiState.activePrompt,
-                    onReset = { viewModel.handleIntent(ChatIntent.ResetPrompt) },
                     tokenUsage = uiState.messages.lastOrNull()?.tokenUsage,
                     toolResult = uiState.messages.lastOrNull()?.toolResult,
                     modifier = Modifier

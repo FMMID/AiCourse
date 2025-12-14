@@ -1,4 +1,4 @@
-package com.example.aicourse.presentation.chat
+package com.example.aicourse.presentation.chat.mvi
 
 import android.app.Application
 import androidx.lifecycle.ViewModel

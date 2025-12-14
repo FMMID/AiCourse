@@ -1,4 +1,4 @@
-package com.example.aicourse.presentation.settings
+package com.example.aicourse.presentation.settings.mvi
 
 import android.app.Application
 import androidx.lifecycle.ViewModel

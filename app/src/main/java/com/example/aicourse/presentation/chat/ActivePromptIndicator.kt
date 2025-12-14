@@ -32,14 +32,13 @@ fun ActivePromptIndicator(
     modifier: Modifier = Modifier.Companion,
     toolResult: ToolResult? = null,
     tokenUsage: TokenUsage? = null,
-    onReset: () -> Unit
 ) {
     Row(
         modifier = modifier.padding(vertical = dimensionResource(R.dimen.spacing_small)),
         horizontalArrangement = Arrangement.Start
     ) {
         AssistChip(
-            onClick = onReset,
+            onClick = { /**TODO добавить обоработку удаления статуса?**/ },
             label = {
                 Text(
                     text = when (activePrompt) {
@@ -102,8 +101,7 @@ fun ActivePromptIndicator(
 private fun ActivePromptIndicatorJSONPreview() {
     AiCourseTheme {
         ActivePromptIndicator(
-            activePrompt = JsonOutputPrompt(),
-            onReset = {},
+            activePrompt = JsonOutputPrompt()
         )
     }
 }

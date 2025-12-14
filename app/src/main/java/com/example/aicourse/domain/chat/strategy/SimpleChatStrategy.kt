@@ -4,6 +4,7 @@ import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
+import com.example.aicourse.domain.chat.model.SendMessageResult
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.promt.dynamicModel.DynamicModelPrompt
 import com.example.aicourse.domain.chat.promt.dynamicSystemPrompt.DynamicSystemPrompt
@@ -11,7 +12,6 @@ import com.example.aicourse.domain.chat.promt.dynamicTemperature.DynamicTemperat
 import com.example.aicourse.domain.chat.promt.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.promt.pc.BuildComputerAssistantPrompt
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
-import com.example.aicourse.domain.chat.repository.SendMessageResult
 import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
 import com.example.aicourse.domain.settings.model.HistoryStrategy
@@ -51,8 +51,17 @@ class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
         }
     }
 
+    //TODO надо разбить функции на мелкие части, сейчас перегруз инфы
     override suspend fun prepareData(userMessage: Message): DataForSend {
         chatStateModel.chatMessages.add(userMessage)
+
+        if (isResetCommand(userMessage.text)) {
+            chatStateModel.activeSystemPrompt = PlainTextPrompt()
+            return DataForSend.LocalResponse(
+                responseMessage = null,
+                activePrompt = chatStateModel.activeSystemPrompt
+            )
+        }
 
         val newPrompt = extractSystemPromptFromContent(
             content = userMessage.text,
@@ -70,7 +79,7 @@ class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
         }
 
         val cleanedMessageForSendToApi = prepareMessageForSending(
-            prompt = newPrompt,
+            prompt = chatStateModel.activeSystemPrompt,
             message = userMessage.text
         )
         chatStateModel.messagesForSendToAi.add(cleanedMessageForSendToApi)
@@ -229,5 +238,10 @@ class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
             typedResponse = botResponse,
             tokenUsage = tokenUsage,
         )
+    }
+
+    private fun isResetCommand(text: String): Boolean {
+        val lowerText = text.trim().lowercase()
+        return lowerText == "/reset" || lowerText == "/plain"
     }
 }

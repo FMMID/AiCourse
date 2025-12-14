@@ -1,6 +1,6 @@
 package com.example.aicourse.domain.tools.modelInfo
 
-import com.example.aicourse.domain.chat.repository.SendMessageResult
+import com.example.aicourse.domain.chat.model.SendMessageResult
 import com.example.aicourse.domain.tools.Tool
 import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.domain.tools.modelInfo.model.ModelInfo
