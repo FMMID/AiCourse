@@ -47,12 +47,12 @@ data class HfChatMessage(
 @Serializable
 data class HfChatCompletionResponse(
     val id: String? = null,
-    val choices: List<HfChoice>,
+    val choices: List<HfChoice>? = null,
     val created: Long? = null,
     val model: String? = null,
     val usage: HfUsage? = null,
     @SerialName("object")
-    val objectType: String? = null
+    val objectType: String? = null,
 )
 
 @Serializable

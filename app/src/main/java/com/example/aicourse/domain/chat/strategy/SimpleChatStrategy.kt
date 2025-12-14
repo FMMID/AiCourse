@@ -36,7 +36,7 @@ class SimpleChatStrategy(
     private val contextWindowManager = ContextWindowManager(
         // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
         targetContextWindow = ContextWindow(
-            originalLimit = 350,
+            originalLimit = 8000,
             keepLastMessagesNumber = 1,
             summaryThreshold = 0.4f
         ),

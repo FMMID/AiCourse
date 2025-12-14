@@ -28,11 +28,14 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
          * Используется всеми провайдерами для единообразия результатов
          */
         const val SUMMARIZATION_SYSTEM_PROMPT = """
-                Ниже приведен отрывок диалога. Твоя задача: сжато пересказать его,
-                сохранив все ключевые факты, имена, цифры и договоренности.
-                Игнорируй приветствия и эмоции.
-                Отвечай только пересказом, без дополнительных комментариев.
-            """
+            Твоя задача: сжато пересказать диалог с пользователем, сохранив все ключевые факты, имена, цифры и договоренности.
+            Игнорируй приветствия и эмоции.
+            Отвечай только пересказом, без дополнительных комментариев.
+            
+            Также учитывай и ПРОШЛАЯ_ИСТОРИЯ диалога при пересказе.
+            
+            ПРОШЛАЯ_ИСТОРИЯ: %s
+        """
 
         /**
          * Параметры для суммаризации
@@ -82,11 +85,8 @@ abstract class BaseChatRemoteDataSource : ChatRemoteDataSource, SummarizeContext
         existContextSummary: ContextSummaryInfo?
     ): ContextSummaryInfo = withContext(Dispatchers.IO) {
         try {
-            val systemPrompt = if (existContextSummary != null) {
-                SUMMARIZATION_SYSTEM_PROMPT.trimIndent().plus("\n\nПрошлая выжимка диалога:\n").plus(existContextSummary.message)
-            } else {
-                SUMMARIZATION_SYSTEM_PROMPT.trimIndent()
-            }
+            val historyToInsert = existContextSummary?.message?.ifBlank { "пусто" } ?:  "пусто"
+            val systemPrompt = SUMMARIZATION_SYSTEM_PROMPT.trimIndent().format(historyToInsert)
 
             val summary = sendSummarizationRequest(
                 systemPrompt = systemPrompt,

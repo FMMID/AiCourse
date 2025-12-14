@@ -12,7 +12,6 @@ import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
 import com.example.aicourse.data.chat.remote.huggingface.HuggingFaceDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
 import com.example.aicourse.data.tools.context.ContextRepositoryImp
-import com.example.aicourse.data.tools.context.SummarizeContextDataSource
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.repository.ChatRepository
 import com.example.aicourse.domain.chat.strategy.ChatStrategy
@@ -53,16 +52,9 @@ object AppInjector {
     }
 
     fun createContextRepository(settingsChatModel: SettingsChatModel): ContextRepository {
-        val summarizeContextDataSource: SummarizeContextDataSource =
-            when (val apiImplementation = settingsChatModel.currentUseApiImplementation) {
-                ApiImplementation.GIGA_CHAT -> {
-                    existDataSources.getOrPut(ApiImplementation.GIGA_CHAT) { GigaChatDataSource(apiImplementation.key) }
-                }
-
-                ApiImplementation.HUGGING_FACE -> {
-                    existDataSources.getOrPut(ApiImplementation.HUGGING_FACE) { HuggingFaceDataSource(apiImplementation.key) }
-                }
-            }
+        val summarizeContextDataSource = existDataSources.getOrPut(ApiImplementation.HUGGING_FACE) {
+            HuggingFaceDataSource(ApiImplementation.HUGGING_FACE.key)
+        }
 
         return ContextRepositoryImp(summarizeContextDataSource)
     }

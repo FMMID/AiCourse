@@ -33,7 +33,7 @@ class HuggingFaceDataSource(
 
     companion object {
         private const val CHAT_API_URL = "https://router.huggingface.co/v1/chat/completions"
-        private const val DEFAULT_MODEL = "openai/gpt-oss-20b:hyperbolic"
+        private const val DEFAULT_MODEL = "deepseek-ai/DeepSeek-R1:novita"
     }
 
     override val logTag: String = "HuggingFaceDataSource"
@@ -44,9 +44,9 @@ class HuggingFaceDataSource(
      */
     override fun resolveModel(modelType: ModelType): String {
         return when (modelType) {
-            ModelType.Fast -> "bineric/NorskGPT-Llama3-8b:featherless-ai" // Быстрая модель (по умолчанию)
-            ModelType.Balanced -> "huihui-ai/Qwen2.5-32B-Instruct-abliterated:featherless-ai" // Сбалансированная
-            ModelType.Powerful -> "openai/gpt-oss-120b:sambanova" // Мощная модель
+            ModelType.Fast -> "deepseek-ai/DeepSeek-R1:novita"
+            ModelType.Balanced -> "deepseek-ai/DeepSeek-R1:novita"
+            ModelType.Powerful -> "deepseek-ai/DeepSeek-R1:novita"
         }
     }
 
@@ -84,7 +84,7 @@ class HuggingFaceDataSource(
                 setBody(request)
             }.body()
 
-            val content = response.choices.firstOrNull()?.message?.content
+            val content = response.choices?.firstOrNull()?.message?.content
                 ?: throw Exception("Пустой ответ от HuggingFace API")
 
             Log.d(logTag, "Received response from HuggingFace API")
@@ -136,7 +136,7 @@ class HuggingFaceDataSource(
             setBody(request)
         }.body()
 
-        val summary = response.choices.firstOrNull()?.message?.content
+        val summary = response.choices?.firstOrNull()?.message?.content
             ?: throw Exception("Пустой ответ от HuggingFace API при суммаризации")
 
         Log.d(logTag, "Summarization completed, tokens: ${response.usage?.totalTokens}")

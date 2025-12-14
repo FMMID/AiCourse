@@ -32,15 +32,16 @@ object SystemPromptMapper {
             ResourceReader.readRawResource(context, resourceId)
         }
 
+        val contextSummaryText = contextSummaryInfo?.message?.let {
+            """
+            Также при общении учитывай контекст нашего диалога: ${contextSummaryInfo.message}
+            """.trimIndent()
+        }
+
         val fullSystemContent = when {
-            baseSystemPrompt != null && contextSummaryInfo != null -> {
-                baseSystemPrompt + "\n\n" + "КОНТЕКСТ ДИАЛОГА:\n${contextSummaryInfo.message}"
-            }
-
+            baseSystemPrompt != null && contextSummaryText != null -> baseSystemPrompt + "\n" + contextSummaryText
             baseSystemPrompt != null -> baseSystemPrompt
-
-            contextSummaryInfo != null -> "КОНТЕКСТ ДИАЛОГА:\n${contextSummaryInfo.message}"
-
+            contextSummaryInfo != null -> contextSummaryText
             else -> null
         }
 
