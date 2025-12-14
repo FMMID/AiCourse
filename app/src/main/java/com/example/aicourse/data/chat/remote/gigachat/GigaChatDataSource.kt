@@ -58,9 +58,9 @@ class GigaChatDataSource(
      */
     override fun resolveModel(modelType: ModelType): String {
         return when (modelType) {
-            ModelType.FAST -> "GigaChat" // Быстрая модель
-            ModelType.BALANCED -> "GigaChat-Pro" // Сбалансированная (пока та же)
-            ModelType.POWERFUL -> "GigaChat-Max" // Мощная (можно использовать GigaChat-Pro если доступна)
+            ModelType.Fast -> "GigaChat" // Быстрая модель
+            ModelType.Balanced -> "GigaChat-Pro" // Сбалансированная (пока та же)
+            ModelType.Powerful -> "GigaChat-Max" // Мощная (можно использовать GigaChat-Pro если доступна)
         }
     }
 

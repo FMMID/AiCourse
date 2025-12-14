@@ -2,6 +2,8 @@ package com.example.aicourse.domain.chat.promt.dynamicSystemPrompt
 
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.SystemPrompt
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Динамический системный промпт, который может переключаться между несколькими
@@ -13,26 +15,20 @@ import com.example.aicourse.domain.chat.promt.SystemPrompt
  * - Пользователь может переключаться между промптами без сброса истории
  * - Для выхода используется команда /exit
  *
- * @param availablePrompts список доступных внутренних промптов
+ * @param activeInternalPrompt текущий активный внутренний промпт (сохраняется между вызовами)
  */
 // TODO: Класс сделан для удоства выполнения задания, так переключение разного SystemPrompt можно сделать
 //  переключением разных имплементаций SystemPrompt, что делает эту релизацию бесполезной
-class DynamicSystemPrompt(
-    private val currentSystemPrompt: SystemPrompt<*>
+@Serializable
+@SerialName("dynamic_system_prompt")
+data class DynamicSystemPrompt(
+    var activeInternalPrompt: InternalPromptConfig? = null,
+    override var contextSummary: String? = null
 ) : SystemPrompt<DynamicSystemPromptResponse> {
-
-    /**
-     * Текущий активный внутренний промпт
-     * null означает, что пользователь только активировал DynamicSystemPrompt
-     * и ему нужно показать список доступных промптов
-     */
-    var activeInternalPrompt: InternalPromptConfig? = (currentSystemPrompt as? DynamicSystemPrompt)?.activeInternalPrompt
-        private set
 
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f
     override val maxTokens: Int = 2048
-    override var contextSummary: String? = null
 
     private val availablePrompts: List<InternalPromptConfig> = listOf(
         InternalPromptConfig(
@@ -63,34 +59,37 @@ class DynamicSystemPrompt(
     /**
      * Проверяет, должен ли DynamicSystemPrompt активироваться
      *
-     * Логика:
-     * 1. Если currentSystemPrompt is DynamicSystemPrompt (уже в динамическом режиме):
-     *    - Если /exit -> возвращаем false (выход из режима)
-     *    - Если триггер внутреннего промпта -> переключаемся и возвращаем true
-     *    - Иначе (обычное сообщение) -> возвращаем true (продолжаем работу)
+     * Логика (после рефакторинга):
+     * - Если /dynamic или /expert -> активация с приветствием
+     * - Если триггер внутреннего промпта -> активация с переключением
+     * - Если /exit -> возвращаем false (выход)
+     * - Иначе -> возвращаем false
      *
-     * 2. Если currentSystemPrompt !is DynamicSystemPrompt (не в динамическом режиме):
-     *    - Если ACTIVATION_TRIGGERS (/dynamic, /expert) -> возвращаем true (активация)
-     *    - Проверка: триггер должен быть либо точным совпадением, либо с пробелом после
-     *    - Это предотвращает срабатывание на /dynamic_temp и подобные команды
-     *    - Иначе -> возвращаем false
+     * Примечание: проверка "уже в режиме" теперь выполняется в SimpleChatStrategy
      */
     override fun matches(message: String): Boolean {
         val lowerMessage = message.trim().lowercase()
 
-        return if (currentSystemPrompt is DynamicSystemPrompt) {
-            when {
-                lowerMessage == "/exit" -> false
-                else -> {
-                    switchToInternalPrompt(message)
-                    true
-                }
-            }
-        } else {
-            ACTIVATION_TRIGGERS.any { trigger ->
+        // Проверка на выход
+        if (lowerMessage == "/exit") {
+            return false
+        }
+
+        // Проверка на активационные триггеры
+        if (ACTIVATION_TRIGGERS.any { trigger ->
                 lowerMessage == trigger || lowerMessage.startsWith("$trigger ")
+            }) {
+            return true
+        }
+
+        // Проверка на триггеры внутренних промптов
+        val hasInternalTrigger = availablePrompts.any { config ->
+            config.triggers.any { trigger ->
+                lowerMessage.startsWith(trigger.lowercase())
             }
         }
+
+        return hasInternalTrigger
     }
 
     /**
@@ -105,18 +104,39 @@ class DynamicSystemPrompt(
      * Обрабатывает входящее сообщение локально
      *
      * Логика:
-     * - Если activeInternalPrompt == null (внутренний промпт не выбран):
-     *   Всегда возвращаем приветственное сообщение с меню
+     * - Если триггер внутреннего промпта:
+     *   Переключаемся на промпт, возвращаем подтверждение
      *
-     * - Если activeInternalPrompt != null (уже выбран внутренний промпт):
-     *   Возвращаем null - отправляем сообщение к API с текущим system content
+     * - Если это активация /dynamic или /expert:
+     *   Возвращаем приветственное сообщение с меню
+     *
+     * - Если activeInternalPrompt != null (уже выбран):
+     *   Возвращаем null - отправляем сообщение к API
+     *
+     * - Иначе:
+     *   Возвращаем null
      */
     override fun handleMessageLocally(message: String): DynamicSystemPromptResponse? {
-        return if (activeInternalPrompt == null) {
-            parseResponse(getWelcomeMessage())
-        } else {
-            null
+        // Проверяем триггеры переключения промпта
+        if (switchToInternalPrompt(message)) {
+            return parseResponse("Промпт переключен на: ${activeInternalPrompt?.name}\n\nТеперь вы можете отправить сообщение.")
         }
+
+        // Если это активационный триггер - показываем welcome message
+        val lowerMessage = message.trim().lowercase()
+        if (ACTIVATION_TRIGGERS.any { trigger ->
+                lowerMessage == trigger || lowerMessage.startsWith("$trigger ")
+            }) {
+            return parseResponse(getWelcomeMessage())
+        }
+
+        // Если промпт не выбран и это не активационная команда
+        if (activeInternalPrompt == null) {
+            return parseResponse(getWelcomeMessage())
+        }
+
+        // Иначе отправляем к API
+        return null
     }
 
     /**
@@ -159,11 +179,11 @@ class DynamicSystemPrompt(
 
         return """
         Режим динамических промптов активирован! 🔧
-        
+
         Доступные режимы:
         $promptsList
         • /exit — выход из динамического режима
-        
+
         Выберите режим, отправив соответствующую команду.
         """.trimIndent()
     }

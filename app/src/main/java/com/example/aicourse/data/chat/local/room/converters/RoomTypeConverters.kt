@@ -8,7 +8,6 @@ import com.example.aicourse.domain.settings.model.SettingsChatModel
 import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 
 /**
  * Room TypeConverters для преобразования сложных типов в String и обратно

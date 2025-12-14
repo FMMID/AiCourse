@@ -4,6 +4,8 @@ import android.util.Log
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.ModelType
 import com.example.aicourse.domain.chat.promt.SystemPrompt
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Динамический системный промпт с управлением типом модели
@@ -16,26 +18,22 @@ import com.example.aicourse.domain.chat.promt.SystemPrompt
  * - Поддерживает команду /model [TYPE] [сообщение] для смены типа модели
  * - Доступные типы: FAST, BALANCED, POWERFUL
  *
- * @param currentSystemPrompt текущий активный промпт (для сохранения состояния)
+ * @param currentModelType текущий тип модели (сохраняется между вызовами)
  */
-class DynamicModelPrompt(
-    private val currentSystemPrompt: SystemPrompt<*>
+@Serializable
+@SerialName("dynamic_model")
+data class DynamicModelPrompt(
+    private var currentModelType: ModelType? = null,
+    override var contextSummary: String? = null
 ) : SystemPrompt<DynamicModelResponse> {
 
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f
     override val maxTokens: Int = 2048
     override val contentResourceId: Int = R.raw.dynamic_model_prompt
-    override var contextSummary: String? = null
 
     override val modelType: ModelType?
         get() = currentModelType
-
-    /**
-     * Текущий тип модели
-     * Сохраняется между вызовами, если уже был активирован DynamicModelPrompt
-     */
-    private var currentModelType: ModelType? = (currentSystemPrompt as? DynamicModelPrompt)?.modelType
 
     companion object {
         private const val ACTIVATION_TRIGGER = "/dynamic_model"
@@ -52,26 +50,20 @@ class DynamicModelPrompt(
     /**
      * Проверяет, должен ли DynamicModelPrompt активироваться
      *
-     * Логика:
-     * 1. Если currentSystemPrompt is DynamicModelPrompt (уже в режиме):
-     *    - Возвращаем true (продолжаем работу в режиме)
+     * Логика (после рефакторинга):
+     * - Если /dynamic_model -> активация с приветствием
+     * - Если /model [TYPE] -> активация с установкой модели
+     * - Иначе -> возвращаем false
      *
-     * 2. Если currentSystemPrompt !is DynamicModelPrompt (не в режиме):
-     *    - Если /dynamic_model -> активация с приветствием
-     *    - Если /model [TYPE] -> активация с установкой модели
-     *    - Иначе -> возвращаем false
+     * Примечание: проверка "уже в режиме" теперь выполняется в SimpleChatStrategy
      */
     override fun matches(message: String): Boolean {
         val lowerMessage = message.trim().lowercase()
 
-        return if (currentSystemPrompt is DynamicModelPrompt) {
-            true
-        } else {
-            lowerMessage == ACTIVATION_TRIGGER
-                    || lowerMessage.startsWith("$ACTIVATION_TRIGGER ")
-                    || lowerMessage == MODEL_COMMAND_PREFIX
-                    || lowerMessage.startsWith("$MODEL_COMMAND_PREFIX ")
-        }
+        return lowerMessage == ACTIVATION_TRIGGER
+                || lowerMessage.startsWith("$ACTIVATION_TRIGGER ")
+                || lowerMessage == MODEL_COMMAND_PREFIX
+                || lowerMessage.startsWith("$MODEL_COMMAND_PREFIX ")
     }
 
     /**
@@ -85,15 +77,15 @@ class DynamicModelPrompt(
     /**
      * Обрабатывает входящее сообщение локально
      *
-     * Логика:
-     * - Если это первая активация через /dynamic_model (без команды /model):
+     * Логика (после рефакторинга):
+     * - Если команда /model [TYPE] без сообщения:
+     *   Устанавливаем тип модели, возвращаем подтверждение
+     *
+     * - Если команда /model [TYPE] [сообщение]:
+     *   Устанавливаем тип модели, отправляем к API (возвращаем null)
+     *
+     * - Если это активация /dynamic_model:
      *   Возвращаем приветственное сообщение
-     *
-     * - Если это первая активация через /model [TYPE] [сообщение]:
-     *   Устанавливаем тип модели, отправляем к API (без приветствия)
-     *
-     * - Если уже в режиме и команда /model без сообщения:
-     *   Возвращаем подтверждение установки типа модели
      *
      * - Иначе:
      *   Возвращаем null - отправляем сообщение к API
@@ -101,24 +93,19 @@ class DynamicModelPrompt(
     override fun handleMessageLocally(message: String): DynamicModelResponse? {
         val modelCommand = parseModelCommand(message)
 
-        if (currentSystemPrompt !is DynamicModelPrompt) {
-            if (modelCommand != null) {
-                currentModelType = modelCommand.modelType
-                return if (modelCommand.restMessage.isNullOrBlank()) {
-                    parseResponse("Тип модели установлен: ${ModelType.displayName(modelCommand.modelType)}")
-                } else {
-                    null
-                }
-            }
-            return parseResponse(getWelcomeMessage())
-        }
-
         if (modelCommand != null) {
             currentModelType = modelCommand.modelType
-
-            if (modelCommand.restMessage.isNullOrBlank()) {
-                return parseResponse("Тип модели установлен: ${ModelType.displayName(modelCommand.modelType)}")
+            return if (modelCommand.restMessage.isNullOrBlank()) {
+                parseResponse("Тип модели установлен: ${ModelType.displayName(modelCommand.modelType)}")
+            } else {
+                null
             }
+        }
+
+        // Если это активационный триггер - показываем welcome message
+        val lowerMessage = message.trim().lowercase()
+        if (lowerMessage == ACTIVATION_TRIGGER || lowerMessage.startsWith("$ACTIVATION_TRIGGER ")) {
+            return parseResponse(getWelcomeMessage())
         }
 
         return null

@@ -44,9 +44,9 @@ class HuggingFaceDataSource(
      */
     override fun resolveModel(modelType: ModelType): String {
         return when (modelType) {
-            ModelType.FAST -> "bineric/NorskGPT-Llama3-8b:featherless-ai" // Быстрая модель (по умолчанию)
-            ModelType.BALANCED -> "huihui-ai/Qwen2.5-32B-Instruct-abliterated:featherless-ai" // Сбалансированная
-            ModelType.POWERFUL -> "openai/gpt-oss-120b:sambanova" // Мощная модель
+            ModelType.Fast -> "bineric/NorskGPT-Llama3-8b:featherless-ai" // Быстрая модель (по умолчанию)
+            ModelType.Balanced -> "huihui-ai/Qwen2.5-32B-Instruct-abliterated:featherless-ai" // Сбалансированная
+            ModelType.Powerful -> "openai/gpt-oss-120b:sambanova" // Мощная модель
         }
     }
 

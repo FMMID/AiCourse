@@ -1,6 +1,8 @@
 package com.example.aicourse.domain.chat.promt.pc
 
 import com.example.aicourse.domain.chat.promt.BotResponse
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Ответ ассистента по сборке ПК
@@ -11,6 +13,8 @@ import com.example.aicourse.domain.chat.promt.BotResponse
  * @param question текст вопроса от ассистента (null если isFinished = true)
  * @param pcBuild финальная конфигурация ПК (null если isFinished = false)
  */
+@Serializable
+@SerialName("pc_build")
 data class PcBuildResponse(
     override val rawContent: String,
     val isFinished: Boolean,

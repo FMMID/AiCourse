@@ -10,12 +10,10 @@ import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.model.TokenUsage
 import com.example.aicourse.domain.chat.promt.BotResponse
-import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.settings.model.SettingsChatModel
 import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 
 /**
  * Mapper для преобразования между domain моделями и Room entities
@@ -44,7 +42,7 @@ class ChatStateMapper {
             contextSummaryInfoJson = domain.contextSummaryInfo?.let {
                 json.encodeToString(it)
             },
-            activeSystemPromptJson = json.encodeToString<SystemPrompt<*>>(domain.activeSystemPrompt),
+            activeSystemPromptJson = json.encodeToString(domain.activeSystemPrompt),
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis()
         )
@@ -119,7 +117,7 @@ class ChatStateMapper {
             contextSummaryInfo = data.chat.contextSummaryInfoJson?.let {
                 json.decodeFromString<ContextSummaryInfo>(it)
             },
-            activeSystemPrompt = json.decodeFromString<SystemPrompt<*>>(data.chat.activeSystemPromptJson)
+            activeSystemPrompt = json.decodeFromString(data.chat.activeSystemPromptJson)
         )
     }
 

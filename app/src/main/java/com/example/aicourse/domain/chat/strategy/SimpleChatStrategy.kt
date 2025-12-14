@@ -71,7 +71,7 @@ class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
 
         val localResponseMessage = handleLocalMessage(message = userMessage.text, activeSystemPrompt = chatStateModel.activeSystemPrompt)
         if (localResponseMessage != null) {
-            chatStateModel.chatMessages.add(userMessage)
+            chatStateModel.chatMessages.add(localResponseMessage)
             return DataForSend.LocalResponse(
                 responseMessage = localResponseMessage,
                 activePrompt = chatStateModel.activeSystemPrompt
@@ -160,6 +160,10 @@ class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
      * Извлекает подходящий SystemPrompt на основе триггеров в сообщении
      * Проходит по списку доступных промптов и возвращает первый подошедший
      *
+     * Логика сохранения состояния:
+     * - Если текущий промпт того же типа, что и новый - сохраняем его состояние
+     * - Если типы разные - создаём новый с дефолтными параметрами
+     *
      * @param content текст сообщения от пользователя
      * @param currentPrompt активный промпт в рамках текущего чата
      * @return подходящий SystemPrompt или null если триггеров не найдено
@@ -171,9 +175,9 @@ class SimpleChatStrategy(initChatStateModel: ChatStateModel) : ChatStrategy {
         val availablePrompts = listOf(
             JsonOutputPrompt(),
             BuildComputerAssistantPrompt(),
-            DynamicSystemPrompt(currentPrompt),
-            DynamicTemperaturePrompt(currentPrompt),
-            DynamicModelPrompt(currentPrompt),
+            currentPrompt as? DynamicSystemPrompt ?: DynamicSystemPrompt(),
+            currentPrompt as? DynamicTemperaturePrompt ?: DynamicTemperaturePrompt(),
+            currentPrompt as? DynamicModelPrompt ?: DynamicModelPrompt(),
         )
 
         return availablePrompts.firstOrNull { prompt ->

@@ -2,8 +2,11 @@ package com.example.aicourse.di
 
 import android.app.Application
 import android.content.Context
+import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.local.ChatLocalDataSource.Companion.MAIN_CHAT_ID
-import com.example.aicourse.data.chat.local.InMemoryChatDataSource
+import com.example.aicourse.data.chat.local.RoomChatLocalDataSource
+import com.example.aicourse.data.chat.local.room.ChatDatabase
+import com.example.aicourse.data.chat.local.room.mapper.ChatStateMapper
 import com.example.aicourse.data.chat.remote.BaseChatRemoteDataSource
 import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
 import com.example.aicourse.data.chat.remote.huggingface.HuggingFaceDataSource
@@ -28,13 +31,25 @@ import kotlinx.coroutines.runBlocking
 object AppInjector {
 
     val existDataSources: MutableMap<ApiImplementation, BaseChatRemoteDataSource> = mutableMapOf()
-    var inMemoryChatDataBase: InMemoryChatDataSource? = null
+    var chatLocalDataSource: ChatLocalDataSource? = null
     var chatStateModel: ChatStateModel? = null
     var chatStrategy: ChatStrategy? = null
 
-    fun createChatStateModel(): ChatStateModel = runBlocking {
-        inMemoryChatDataBase = inMemoryChatDataBase ?: run { InMemoryChatDataSource() }
-        return@runBlocking chatStateModel ?: run { inMemoryChatDataBase!!.getChatState(MAIN_CHAT_ID) }
+    /**
+     * Создаёт или возвращает существующий ChatLocalDataSource
+     * Использует Room Database для персистентного хранения
+     */
+    private fun getChatLocalDataSource(context: Context): ChatLocalDataSource {
+        return chatLocalDataSource ?: run {
+            val database = ChatDatabase.getInstance(context)
+            val mapper = ChatStateMapper()
+            RoomChatLocalDataSource(database.chatDao(), mapper)
+        }.also { chatLocalDataSource = it }
+    }
+
+    fun createChatStateModel(context: Context): ChatStateModel = runBlocking {
+        val localDataSource = getChatLocalDataSource(context)
+        return@runBlocking chatStateModel ?: run { localDataSource.getChatState(MAIN_CHAT_ID) }
     }
 
     fun createContextRepository(settingsChatModel: SettingsChatModel): ContextRepository {
@@ -63,7 +78,8 @@ object AppInjector {
             }
         }
 
-        val repository = ChatRepositoryImpl(context, remoteDataSource, InMemoryChatDataSource())
+        val localDataSource = getChatLocalDataSource(context)
+        val repository = ChatRepositoryImpl(context, remoteDataSource, localDataSource)
 
         if (chatStateModel == null) {
             GlobalScope.launch {
@@ -75,7 +91,7 @@ object AppInjector {
     }
 
     fun createSendMessageChatUseCase(application: Application): SendMessageChatUseCase {
-        val chatStateModel = createChatStateModel()
+        val chatStateModel = createChatStateModel(application)
         val repository = createChatRepository(application, chatStateModel.settingsChatModel)
         val simpleDataForSendStrategyImp = chatStrategy ?: run {
             SimpleChatStrategy(initChatStateModel = chatStateModel)
@@ -86,7 +102,7 @@ object AppInjector {
     }
 
     fun createClearHistoryChatUseCase(application: Application): ClearHistoryChatUseCase {
-        val chatStateModel = createChatStateModel()
+        val chatStateModel = createChatStateModel(application)
         val repository = createChatRepository(application, chatStateModel.settingsChatModel)
         val simpleDataForSendStrategyImp = chatStrategy ?: run {
             SimpleChatStrategy(initChatStateModel = chatStateModel)
@@ -96,7 +112,7 @@ object AppInjector {
     }
 
     fun createGetHistoryChatUseCase(application: Application): GetHistoryChatUseCase {
-        val chatStateModel = createChatStateModel()
+        val chatStateModel = createChatStateModel(application)
         val repository = createChatRepository(application, chatStateModel.settingsChatModel)
 
         return GetHistoryChatUseCase(chatRepository = repository)

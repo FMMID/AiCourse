@@ -1,6 +1,7 @@
 package com.example.aicourse.data.chat.local
 
 import com.example.aicourse.domain.chat.model.ChatStateModel
+import com.example.aicourse.domain.settings.model.SettingsChatModel
 
 /**
  * Интерфейс для локального источника данных чата
@@ -26,4 +27,14 @@ interface ChatLocalDataSource {
      * Очищает историю сообщений
      */
     suspend fun clearHistory()
+
+    /**
+     * Гранулярное обновление только настроек чата
+     * Позволяет изменить ApiImplementation, HistoryStrategy или OutPutDataStrategy
+     * без перезаписи всех сообщений
+     *
+     * @param chatId идентификатор чата
+     * @param settings новые настройки
+     */
+    suspend fun updateSettings(chatId: String, settings: SettingsChatModel)
 }

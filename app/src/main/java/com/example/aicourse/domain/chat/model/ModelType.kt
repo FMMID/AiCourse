@@ -1,24 +1,30 @@
 package com.example.aicourse.domain.chat.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Типы моделей для динамического переключения
  * Каждый провайдер (GigaChat, HuggingFace) резолвит эти типы в свои конкретные модели
  */
+@Serializable
 sealed class ModelType {
     /**
      * Быстрая модель - минимальная латентность, базовые возможности
      */
-    data object FAST : ModelType()
+    @Serializable
+    data object Fast : ModelType()
 
     /**
      * Сбалансированная модель - компромисс между скоростью и качеством
      */
-    data object BALANCED : ModelType()
+    @Serializable
+    data object Balanced : ModelType()
 
     /**
      * Мощная модель - максимальное качество, может быть медленнее
      */
-    data object POWERFUL : ModelType();
+    @Serializable
+    data object Powerful : ModelType();
 
     companion object {
         /**
@@ -28,9 +34,9 @@ sealed class ModelType {
          */
         fun fromString(value: String): ModelType? {
             return when (value.trim().uppercase()) {
-                "FAST" -> FAST
-                "BALANCED" -> BALANCED
-                "POWERFUL" -> POWERFUL
+                "FAST" -> Fast
+                "BALANCED" -> Balanced
+                "POWERFUL" -> Powerful
                 else -> null
             }
         }
@@ -39,9 +45,9 @@ sealed class ModelType {
          * Возвращает человеко-читаемое имя типа модели
          */
         fun displayName(modelType: ModelType): String = when (modelType) {
-            FAST -> "Fast"
-            BALANCED -> "Balanced"
-            POWERFUL -> "Powerful"
+            Fast -> "Fast"
+            Balanced -> "Balanced"
+            Powerful -> "Powerful"
         }
     }
 }

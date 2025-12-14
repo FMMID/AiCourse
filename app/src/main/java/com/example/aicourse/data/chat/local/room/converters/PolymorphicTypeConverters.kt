@@ -63,12 +63,10 @@ object PolymorphicJson {
                 subclass(DynamicSystemPrompt::class)
             }
 
-            // ModelType полиморфизм (3 типа + Default)
             polymorphic(ModelType::class) {
                 subclass(ModelType.Fast::class)
                 subclass(ModelType.Balanced::class)
                 subclass(ModelType.Powerful::class)
-                subclass(ModelType.Default::class)
             }
         }
 
