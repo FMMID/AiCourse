@@ -11,6 +11,8 @@ import com.example.aicourse.data.chat.remote.BaseChatRemoteDataSource
 import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
 import com.example.aicourse.data.chat.remote.huggingface.HuggingFaceDataSource
 import com.example.aicourse.data.chat.repository.ChatRepositoryImpl
+import com.example.aicourse.data.settings.remote.McpRemoteDataSource
+import com.example.aicourse.data.settings.repository.McpRepositoryImp
 import com.example.aicourse.data.tools.context.ContextRepositoryImp
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.repository.ChatRepository
@@ -21,6 +23,7 @@ import com.example.aicourse.domain.chat.usecase.GetHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.SendMessageChatUseCase
 import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.model.SettingsChatModel
+import com.example.aicourse.domain.settings.repository.McpRepository
 import com.example.aicourse.domain.tools.context.ContextRepository
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -30,6 +33,7 @@ import kotlinx.coroutines.runBlocking
 object AppInjector {
 
     val existDataSources: MutableMap<ApiImplementation, BaseChatRemoteDataSource> = mutableMapOf()
+    var mcpRemoteDatabase: McpRemoteDataSource? = null
     var chatLocalDataSource: ChatLocalDataSource? = null
     var chatStateModel: ChatStateModel? = null
     var chatStrategy: ChatStrategy? = null
@@ -57,6 +61,12 @@ object AppInjector {
         }
 
         return ContextRepositoryImp(summarizeContextDataSource)
+    }
+
+    fun createMcpRepository(): McpRepository {
+        mcpRemoteDatabase = mcpRemoteDatabase ?: McpRemoteDataSource()
+        val mcpRepository = McpRepositoryImp(mcpRemoteDatabase!!)
+        return mcpRepository
     }
 
     fun createChatRepository(context: Context, settingsChatModel: SettingsChatModel): ChatRepository {
