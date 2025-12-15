@@ -13,9 +13,9 @@ kotlin {
     }
 }
 
-
 dependencies {
     api(libs.mcp.kotlin.sdk)
+    implementation(libs.mcp.logging)
 
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
@@ -23,5 +23,4 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
 
 //    implementation(libs.mcp.anthropic)  //TODO пока используем для примера
-//    implementation(libs.mcp.logging) //TODO пока используем для примера
 }
