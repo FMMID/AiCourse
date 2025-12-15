@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "AiCourse"
 include(":app")
+include(":mcpclient")
