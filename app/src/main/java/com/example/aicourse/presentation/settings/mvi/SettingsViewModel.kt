@@ -25,8 +25,8 @@ class SettingsViewModel(
                 getLocalMcpToolsUseCase(intent.mcpClientType).onSuccess { tools ->
                     _uiState.update { state ->
                         val typeAndTools = intent.mcpClientType to tools
-                        val updatedDownloadedMcpClientTools = state.downloadedMcpClientToos + typeAndTools
-                        state.copy(downloadedMcpClientToos = updatedDownloadedMcpClientTools)
+                        val updatedDownloadedMcpClientTools = state.downloadedMcpClientTools + typeAndTools
+                        state.copy(downloadedMcpClientTools = updatedDownloadedMcpClientTools)
                     }
                 }
             }
