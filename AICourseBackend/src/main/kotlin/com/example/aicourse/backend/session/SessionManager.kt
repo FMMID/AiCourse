@@ -1,8 +1,8 @@
 package com.example.aicourse.backend.session
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.response.respond
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.response.*
 import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
 import java.util.concurrent.ConcurrentHashMap
 
@@ -18,10 +18,9 @@ object SessionManager {
     }
 
     /**
-     * Пытается найти транспорт по ID. Если не находит — ищет любой активный (Fallback).
+     * Пытается найти транспорт по ID. Если не находит — ошибка HttpStatusCode.NotFound
      */
     suspend fun handleMessage(call: ApplicationCall, sessionId: String?) {
-        // 1. Пробуем найти по явному ID
         val transport = if (sessionId != null) activeTransports[sessionId] else null
 
         if (transport != null) {
@@ -29,15 +28,7 @@ object SessionManager {
             return
         }
 
-        // 2. Fallback логика (для Инспектора)
-        val fallback = activeTransports.values.lastOrNull()
-        if (fallback != null) {
-            println("⚠️ Forwarding POST to fallback session (Target ID was: $sessionId)")
-            safeHandle(fallback, call)
-            return
-        }
-
-        call.respond(HttpStatusCode.Companion.NotFound, "Session not found")
+        call.respond(HttpStatusCode.NotFound, "Session not found")
     }
 
     private suspend fun safeHandle(transport: SseServerTransport, call: ApplicationCall) {
