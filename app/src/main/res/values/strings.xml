@@ -22,4 +22,16 @@
     <string name="user_message_description">Ваше сообщение: %1$s</string>
     <string name="bot_message_description">Ответ бота: %1$s</string>
     <string name="message_list_description">Список сообщений чата</string>
+
+    <!-- MCP Tools Section -->
+    <string name="mcp_section_title">MCP Клиенты</string>
+    <string name="mcp_get_tools_button">Получить доступные инструменты</string>
+    <string name="mcp_no_tools">Инструменты не загружены</string>
+    <string name="mcp_tool_name_label">Название:</string>
+    <string name="mcp_tool_description_label">Описание:</string>
+    <string name="mcp_tool_schema_label">Схема параметров:</string>
+    <string name="mcp_schema_unavailable">Схема не предоставлена</string>
+    <string name="mcp_schema_error">Ошибка форматирования схемы</string>
+    <string name="mcp_section_expand">Развернуть</string>
+    <string name="mcp_section_collapse">Свернуть</string>
 </resources>
