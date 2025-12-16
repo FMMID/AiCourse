@@ -20,6 +20,11 @@ dependencies {
     implementation(libs.ktor.serialization)
     implementation(libs.ktor.server.cors)
 
+    // Ktor client
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+
     // MCP SDK
     implementation(libs.mcp.kotlin.sdk)
 

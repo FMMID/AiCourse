@@ -1,5 +1,7 @@
 // bridge.js
 let EventSource = require('eventsource');
+
+// Полифилл для EventSource (если библиотека экспортирует объект)
 if (typeof EventSource !== 'function') {
     if (EventSource.EventSource) {
         EventSource = EventSource.EventSource;
@@ -14,9 +16,11 @@ if (typeof EventSource !== 'function' && global.EventSource) {
 const readline = require('readline');
 
 // Адрес Ktor сервера
-const SSE_URL = 'http://127.0.0.1:8080/sse';
+const BASE_HOST = 'http://127.0.0.1:8080';
+const SSE_PATH = '/sse';
+const SSE_URL = BASE_HOST + SSE_PATH;
 
-// Логгер ошибок (пишем в stderr, чтобы не ломать JSON-RPC в stdout)
+// Логгер
 function log(msg) {
     console.error(`[Bridge] ${msg}`);
 }
@@ -25,9 +29,7 @@ async function main() {
     log(`Connecting to ${SSE_URL}...`);
 
     let postUrl = null;
-    let sessionId = null;
 
-    // 1. Подключаемся к SSE (слушаем сервер)
     const es = new EventSource(SSE_URL);
 
     es.onopen = () => {
@@ -35,31 +37,30 @@ async function main() {
     };
 
     es.onerror = (err) => {
-        log('SSE Error. Is the Ktor server running?');
+        // EventSource часто кидает объект события вместо текста ошибки, поэтому логируем аккуратно
+        log('SSE Connection Error (Is server running?)');
     };
 
-    // 2. Ловим событие 'endpoint' - сервер сообщает, куда слать POST запросы
+    // 2. Ловим событие 'endpoint'
     es.addEventListener('endpoint', (event) => {
-        const fullUrl = event.data; // Приходит что-то типа http://.../messages/UUID
-        postUrl = fullUrl;
+        const urlOrPath = event.data; // Сервер может прислать "/messages?..." или "http://..."
 
-        // Вытащим SessionID из URL для красоты логов
-        const parts = fullUrl.split('/');
-        sessionId = parts[parts.length - 1];
+        // Превращаем относительный путь в абсолютный URL
+        if (urlOrPath.startsWith('/')) {
+            postUrl = BASE_HOST + urlOrPath;
+        } else {
+            postUrl = urlOrPath;
+        }
 
-        log(`Endpoint received! SessionID: ${sessionId}`);
-        log(`POST URL: ${postUrl}`);
+        log(`Endpoint received: ${urlOrPath}`);
+        log(`Full POST URL set to: ${postUrl}`);
     });
 
-    // 3. Ловим обычные сообщения от сервера (ответы ИИ)
     es.onmessage = (event) => {
         if (!event.data) return;
-
-        // Просто печатаем JSON в stdout - Claude это прочитает
         console.log(event.data);
     };
 
-    // 4. Слушаем Claude (stdin)
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
@@ -70,12 +71,11 @@ async function main() {
         if (!line.trim()) return;
 
         if (!postUrl) {
-            log('Wait! No endpoint received yet. Cannot send message.');
+            log('Wait! No endpoint received yet.');
             return;
         }
 
         try {
-            // Отправляем сообщение от Claude на сервер
             const response = await fetch(postUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -84,6 +84,8 @@ async function main() {
 
             if (!response.ok) {
                 log(`POST Error: ${response.status} ${response.statusText}`);
+                const text = await response.text();
+                log(`Server response: ${text}`);
             }
         } catch (e) {
             log(`Network Error: ${e.message}`);

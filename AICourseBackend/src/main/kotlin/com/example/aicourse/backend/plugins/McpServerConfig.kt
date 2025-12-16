@@ -1,6 +1,6 @@
 package com.example.aicourse.backend.plugins
 
-import com.example.aicourse.backend.tools.registerTrackerTool
+import com.example.aicourse.backend.tools.registerAnimeTool
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -15,7 +15,7 @@ fun createMcpServer(): Server {
             )
         )
     )
-    server.registerTrackerTool()
+    server.registerAnimeTool()
 
     return server
 }
