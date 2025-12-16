@@ -14,5 +14,5 @@ data class SettingsUiState(
         outPutDataStrategy = OutPutDataStrategy.None,
     ),
     val availableMcpClients: List<McpClientType> = McpClientType.entries,
-    val downloadedMcpClientToos: Map<McpClientType, List<Tool>> = mapOf()
+    val downloadedMcpClientTools: Map<McpClientType, List<Tool>> = mapOf()
 )
