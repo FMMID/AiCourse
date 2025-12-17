@@ -1,0 +1,11 @@
+services:
+  mcp-server:
+    build: .
+    container_name: mcp-aicourse-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - LOG_LEVEL=INFO
+      # Сюда можно будет добавить API ключи, если понадобятся
+      # - MY_API_KEY=12345

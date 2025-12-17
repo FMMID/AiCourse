@@ -25,6 +25,8 @@ import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.model.SettingsChatModel
 import com.example.aicourse.domain.settings.repository.McpRepository
 import com.example.aicourse.domain.tools.context.ContextRepository
+import com.example.aicourse.mcpclient.McpClientFactory
+import com.example.aicourse.mcpclient.McpClientType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -32,6 +34,7 @@ import kotlinx.coroutines.runBlocking
 // TODO Заменить на Dependency Injection (Hilt, Koin, и т.д.)
 object AppInjector {
 
+    val mcpClient = McpClientFactory.createMcpClient(McpClientType.ANIME_SEARCH) // TODO пока хардкодим
     val existDataSources: MutableMap<ApiImplementation, BaseChatRemoteDataSource> = mutableMapOf()
     var mcpRemoteDatabase: McpRemoteDataSource? = null
     var chatLocalDataSource: ChatLocalDataSource? = null
@@ -72,7 +75,7 @@ object AppInjector {
     fun createChatRepository(context: Context, settingsChatModel: SettingsChatModel): ChatRepository {
         val remoteDataSource = when (val apiImplementation = settingsChatModel.currentUseApiImplementation) {
             ApiImplementation.GIGA_CHAT -> {
-                existDataSources.getOrPut(ApiImplementation.GIGA_CHAT) { GigaChatDataSource(apiImplementation.key) }
+                existDataSources.getOrPut(ApiImplementation.GIGA_CHAT) { GigaChatDataSource(apiImplementation.key, mcpClient) }
             }
 
             ApiImplementation.HUGGING_FACE -> {
