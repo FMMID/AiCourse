@@ -7,5 +7,5 @@ services:
       - "8080:8080"
     environment:
       - LOG_LEVEL=INFO
-      # Сюда можно будет добавить API ключи, если понадобятся
-      # - MY_API_KEY=12345
+    env_file:
+      - .env

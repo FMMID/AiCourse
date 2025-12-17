@@ -3,6 +3,7 @@ package com.example.aicourse.backend
 import com.example.aicourse.backend.plugins.configureHttp
 import com.example.aicourse.backend.plugins.createMcpServer
 import com.example.aicourse.backend.routes.mcpRoutes
+import com.example.aicourse.backend.services.startServices
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -37,4 +38,7 @@ fun Application.module() {
     routing {
         mcpRoutes(mcpServer)
     }
+
+    // 4. Запуск дополнительных сервисов
+    startServices()
 }

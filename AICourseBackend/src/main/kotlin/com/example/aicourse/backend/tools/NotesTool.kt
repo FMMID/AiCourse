@@ -1,6 +1,6 @@
 package com.example.aicourse.backend.tools
 
-import com.example.aicourse.backend.services.NotesService
+import com.example.aicourse.backend.services.notes.NotesService
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
@@ -30,9 +30,10 @@ private fun Server.registerAddNoteTool() {
         )
     ) { callToolRequest ->
         val task = callToolRequest.arguments?.get("text")?.jsonPrimitive?.content
+        val userId = callToolRequest.arguments?.get("userId")?.jsonPrimitive?.content ?: "unknown_user"
 
         val (resultText, isError) = if (task != null) {
-            NotesService.addNote(task) to false
+            NotesService.addNote(userId, task) to false
         } else {
             "No data found in property: \"text\"" to true
         }
@@ -50,7 +51,8 @@ private fun Server.registerGetRecentNotes() {
         description = "Retrieves all saved notes and tasks from the database. Use this to create a summary or remind the user about their plans.",
         inputSchema = ToolSchema(properties = null)
     ) { callToolRequest ->
-        val notes = NotesService.getAllNotes()
+        val userId = callToolRequest.arguments?.get("userId")?.jsonPrimitive?.content ?: "unknown_user"
+        val notes = NotesService.getAllNotes(userId)
         val notesText = if (notes.isEmpty()) {
             "Список заметок пуст."
         } else {
