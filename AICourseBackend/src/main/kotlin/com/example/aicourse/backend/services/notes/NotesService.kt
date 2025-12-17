@@ -7,6 +7,12 @@ import java.io.File
 @Serializable
 data class Note(val text: String, val timestamp: Long)
 
+@Serializable
+data class UserData(
+    val notes: MutableList<Note> = mutableListOf(),
+    var fcmToken: String? = null // Поле для хранения токена
+)
+
 object NotesService {
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     private val dataDir = File("users_data").apply { if (!exists()) mkdirs() }
@@ -20,17 +26,31 @@ object NotesService {
         return "Заметка сохранена для $userId. Всего: ${notes.size}"
     }
 
-    fun getAllNotes(userId: String): List<Note> {
-        val file = getFileForUser(userId)
-        if (!file.exists()) return emptyList()
-        return try {
-            json.decodeFromString<List<Note>>(file.readText())
-        } catch (e: Exception) {
-            emptyList()
-        }
+    fun updateToken(userId: String, token: String) {
+        val data = loadUserData(userId)
+        data.fcmToken = token
+        saveUserData(userId, data)
     }
 
     fun listUsers(): List<String> {
         return dataDir.listFiles()?.map { it.nameWithoutExtension } ?: emptyList()
+    }
+
+    fun getAllNotes(userId: String): List<Note> = loadUserData(userId).notes
+
+    fun getFcmToken(userId: String): String? = loadUserData(userId).fcmToken
+
+    private fun loadUserData(userId: String): UserData {
+        val file = getFileForUser(userId)
+        if (!file.exists()) return UserData()
+        return try {
+            json.decodeFromString<UserData>(file.readText())
+        } catch (e: Exception) {
+            UserData()
+        }
+    }
+
+    private fun saveUserData(userId: String, data: UserData) {
+        getFileForUser(userId).writeText(json.encodeToString(data))
     }
 }

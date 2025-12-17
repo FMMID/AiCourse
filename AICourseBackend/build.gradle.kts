@@ -32,5 +32,8 @@ dependencies {
     // Logging
     implementation(libs.logback.classic)
 
+    // Notifications
+    implementation(libs.notifications.firebase)
+
     testImplementation(libs.kotlin.test.junit)
 }
