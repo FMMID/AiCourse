@@ -9,10 +9,8 @@ import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.model.HistoryStrategy
 import com.example.aicourse.domain.settings.model.OutPutDataStrategy
 import com.example.aicourse.domain.settings.model.SettingsChatModel
-import com.example.aicourse.domain.settings.model.TokenConsumptionMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 
 /**
  * Реализация ChatLocalDataSource с использованием Room Database
@@ -102,8 +100,8 @@ class RoomChatLocalDataSource(
             id = id,
             settingsChatModel = SettingsChatModel(
                 currentUseApiImplementation = ApiImplementation.GIGA_CHAT,
-                historyStrategy = HistoryStrategy.SUMMARIZE,
-                outPutDataStrategy = OutPutDataStrategy.Token(TokenConsumptionMode.CONTEXT_MODE)
+                historyStrategy = HistoryStrategy.PAIN,
+                outPutDataStrategy = OutPutDataStrategy.None
             ),
             chatMessages = mutableListOf(),
             messagesForSendToAi = mutableListOf(),

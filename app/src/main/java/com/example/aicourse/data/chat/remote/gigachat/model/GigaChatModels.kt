@@ -3,6 +3,7 @@ package com.example.aicourse.data.chat.remote.gigachat.model
 import com.example.aicourse.domain.chat.model.MessageType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Модели данных для GigaChat API
@@ -25,6 +26,10 @@ data class TokenResponse(
 data class ChatCompletionRequest(
     val model: String,
     val messages: List<ChatMessage>,
+    val functions: List<GigaFunction>? = null, // список доступных функций
+    @SerialName("function_call")
+    val functionCall: String? = null, // Указываем режим вызова (auto - модель сама решает) "auto" или "none"
+
     val temperature: Double = 1.0,
     @SerialName("top_p")
     val topP: Double = 0.1,
@@ -34,14 +39,28 @@ data class ChatCompletionRequest(
 )
 
 @Serializable
+data class GigaFunction(
+    val name: String,
+    val description: String?,
+    // Схема параметров (JSON Schema)
+    val parameters: JsonObject
+)
+
+@Serializable
 data class ChatMessage(
     val role: String,
-    val content: String
+    val content: String? = null,
+    @SerialName("function_call")
+    val functionCall: FunctionCall? = null,
+    val name: String? = null,
+    @SerialName("functions_state_id")
+    val functionsStateId: String? = null
 ) {
     companion object {
         const val ROLE_USER = "user"
         const val ROLE_ASSISTANT = "assistant"
         const val ROLE_SYSTEM = "system"
+        const val ROLE_FUNCTION = "function"
 
         fun fromMessageType(messageType: MessageType): String {
             return when(messageType) {
@@ -52,6 +71,12 @@ data class ChatMessage(
         }
     }
 }
+
+@Serializable
+data class FunctionCall(
+    val name: String,
+    val arguments: JsonObject
+)
 
 @Serializable
 data class ChatCompletionResponse(
