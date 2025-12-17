@@ -13,6 +13,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
+//https://docs.api.jikan.moe/#/anime/getanimesearch
+
 @Serializable
 data class JikanResponse(
     val data: List<AnimeData>

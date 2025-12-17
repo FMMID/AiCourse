@@ -1,7 +1,7 @@
 // bridge.js
 let EventSource = require('eventsource');
 
-// Полифилл для EventSource (если библиотека экспортирует объект)
+// Полифилл для EventSource
 if (typeof EventSource !== 'function') {
     if (EventSource.EventSource) {
         EventSource = EventSource.EventSource;
@@ -15,8 +15,8 @@ if (typeof EventSource !== 'function' && global.EventSource) {
 
 const readline = require('readline');
 
-// Адрес Ktor сервера
-const BASE_HOST = 'http://127.0.0.1:8080';
+// Адрес твоего сервера
+const BASE_HOST = 'http://127.0.0.16:8080'; //change to own ip
 const SSE_PATH = '/sse';
 const SSE_URL = BASE_HOST + SSE_PATH;
 
@@ -29,53 +29,12 @@ async function main() {
     log(`Connecting to ${SSE_URL}...`);
 
     let postUrl = null;
+    let messageQueue = []; // <--- 1. Карман для сообщений
+    let isFlushing = false;
 
-    const es = new EventSource(SSE_URL);
-
-    es.onopen = () => {
-        log('SSE Connected');
-    };
-
-    es.onerror = (err) => {
-        // EventSource часто кидает объект события вместо текста ошибки, поэтому логируем аккуратно
-        log('SSE Connection Error (Is server running?)');
-    };
-
-    // 2. Ловим событие 'endpoint'
-    es.addEventListener('endpoint', (event) => {
-        const urlOrPath = event.data; // Сервер может прислать "/messages?..." или "http://..."
-
-        // Превращаем относительный путь в абсолютный URL
-        if (urlOrPath.startsWith('/')) {
-            postUrl = BASE_HOST + urlOrPath;
-        } else {
-            postUrl = urlOrPath;
-        }
-
-        log(`Endpoint received: ${urlOrPath}`);
-        log(`Full POST URL set to: ${postUrl}`);
-    });
-
-    es.onmessage = (event) => {
-        if (!event.data) return;
-        console.log(event.data);
-    };
-
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false
-    });
-
-    rl.on('line', async (line) => {
-        if (!line.trim()) return;
-
-        if (!postUrl) {
-            log('Wait! No endpoint received yet.');
-            return;
-        }
-
-        try {
+    // Функция отправки (вынесли отдельно)
+    const sendMessage = async (line) => {
+         try {
             const response = await fetch(postUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -90,6 +49,62 @@ async function main() {
         } catch (e) {
             log(`Network Error: ${e.message}`);
         }
+    };
+
+    const es = new EventSource(SSE_URL);
+
+    es.onopen = () => {
+        log('SSE Connected');
+    };
+
+    es.onerror = (err) => {
+        log('SSE Connection Error. Waiting for retry...');
+    };
+
+    es.addEventListener('endpoint', async (event) => {
+        const urlOrPath = event.data;
+        if (urlOrPath.startsWith('/')) {
+            postUrl = BASE_HOST + urlOrPath;
+        } else {
+            postUrl = urlOrPath;
+        }
+
+        log(`Endpoint received. Ready to send! URL: ${postUrl}`);
+
+        // <--- 2. Как только получили адрес, отправляем всё, что накопилось
+        if (messageQueue.length > 0) {
+            log(`Flushing ${messageQueue.length} queued messages...`);
+            for (const line of messageQueue) {
+                await sendMessage(line);
+            }
+            messageQueue = [];
+        }
+    });
+
+    es.onmessage = (event) => {
+        if (!event.data) return;
+        // Важно: печатаем ответ сервера в stdout для Claude
+        console.log(event.data);
+    };
+
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false
+    });
+
+    rl.on('line', (line) => {
+        if (!line.trim()) return;
+
+        if (!postUrl) {
+            // <--- 3. Если адреса нет, кладем в очередь, а не выкидываем
+            log('Buffering message (waiting for endpoint)...');
+            messageQueue.push(line);
+            return;
+        }
+
+        // Если адрес есть - отправляем сразу
+        sendMessage(line);
     });
 }
 
