@@ -14,6 +14,7 @@ import kotlinx.serialization.json.putJsonObject
 fun Server.registerNotesTools() {
     registerAddNoteTool()
     registerGetRecentNotes()
+    registerCompleteNoteTool()
 }
 
 private fun Server.registerAddNoteTool() {
@@ -51,19 +52,48 @@ private fun Server.registerAddNoteTool() {
 private fun Server.registerGetRecentNotes() {
     addTool(
         name = "get_recent_notes",
-        description = "Retrieves all saved notes and tasks from the database. Use this to create a summary or remind the user about their plans.",
+        description = "Retrieves all notes. Shows [x] for completed and [ ] for active tasks.",
         inputSchema = ToolSchema(properties = null)
     ) { callToolRequest ->
         val userId = callToolRequest.arguments?.get("userId")?.jsonPrimitive?.content ?: FALLBACK_USER
         val notes = NotesService.getAllNotes(userId)
+
         val notesText = if (notes.isEmpty()) {
-            "Список заметок пуст."
+            "Список задач пуст."
         } else {
-            notes.joinToString("\n") { "- ${it.text} (saved at ${it.timestamp})" }
+            notes.joinToString("\n") { note ->
+                val status = if (note.isCompleted) "[x]" else "[ ]"
+                "$status ${note.text} (от ${java.util.Date(note.timestamp)})"
+            }
         }
 
-        CallToolResult(
-            content = listOf(TextContent(text = notesText))
+        CallToolResult(content = listOf(TextContent(text = notesText)))
+    }
+}
+
+private fun Server.registerCompleteNoteTool() {
+    addTool(
+        name = "complete_note",
+        description = "Marks a task as completed. Use this when the user says they finished something.",
+        inputSchema = ToolSchema(
+            properties = buildJsonObject {
+                putJsonObject("text_snippet") {
+                    put("type", "string")
+                    put("description", "A part of the task text to identify it (e.g. 'milk' for 'Buy milk')")
+                }
+            },
+            required = listOf("text_snippet")
         )
+    ) { callToolRequest ->
+        val snippet = callToolRequest.arguments?.get("text_snippet")?.jsonPrimitive?.content
+        val userId = callToolRequest.arguments?.get("userId")?.jsonPrimitive?.content ?: FALLBACK_USER
+
+        val (resultText, isError) = if (snippet != null) {
+            NotesService.markNoteAsCompleted(userId, snippet) to false
+        } else {
+            "Argument 'text_snippet' is missing" to true
+        }
+
+        CallToolResult(content = listOf(TextContent(text = resultText)), isError = isError)
     }
 }

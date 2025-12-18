@@ -7,7 +7,11 @@ import java.io.File
 const val FALLBACK_USER = "unknown_user"
 
 @Serializable
-data class Note(val text: String, val timestamp: Long)
+data class Note(
+    val text: String,
+    val timestamp: Long,
+    var isCompleted: Boolean = false
+)
 
 @Serializable
 data class UserData(
@@ -27,6 +31,23 @@ object NotesService {
         saveUserData(userId, userData)
         return "Заметка сохранена для $userId. Всего: ${userData.notes.size}"
     }
+
+    fun markNoteAsCompleted(userId: String, noteTextSnippet: String): String {
+        val data = loadUserData(userId)
+
+        val note = data.notes.find {
+            !it.isCompleted && it.text.contains(noteTextSnippet, ignoreCase = true)
+        }
+
+        return if (note != null) {
+            note.isCompleted = true
+            saveUserData(userId, data)
+            "Отлично! Задача \"${note.text}\" отмечена как выполненная."
+        } else {
+            "Не удалось найти активную задачу, похожую на \"$noteTextSnippet\"."
+        }
+    }
+
     fun updateToken(userId: String, token: String) {
         val data = loadUserData(userId)
         data.fcmToken = token

@@ -13,9 +13,11 @@ object NotesSummarySchedulerService {
                 val userIds = NotesService.listUsers()
                 userIds.forEach { userId ->
                     val notes = NotesService.getAllNotes(userId)
-                    if (notes.isNotEmpty()) {
+                    val activeNotes = notes.filter { !it.isCompleted }
+                    println("userId: $userId notes:${activeNotes.size}")
+                    if (activeNotes.isNotEmpty()) {
                         val aiServiceNotes = AiProvider.getAiServiceNotes()
-                        val summary = aiServiceNotes.generateSummary(notes)
+                        val summary = aiServiceNotes.generateSummary(activeNotes)
                         val token = NotesService.getFcmToken(userId)
 
                         if (token != null) {
@@ -26,7 +28,7 @@ object NotesSummarySchedulerService {
                         }
                     }
                 }
-                delay(3600_000) // Раз в час
+                delay(60_000) // Раз в час
             }
         }
     }
