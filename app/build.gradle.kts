@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
 }
 
 val localProps = Properties()
@@ -82,6 +83,9 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
+
+    //Notifications
+    implementation(libs.firebase.messaging.ktx)
 
     //MCP client
     implementation(project(":mcpclient"))

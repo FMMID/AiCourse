@@ -1,6 +1,7 @@
 [versions]
 #App
 agp = "8.9.3"
+firebaseMessagingKtx = "23.4.0"
 kotlin = "2.2.21"
 ksp = "2.2.21-2.0.4"
 room = "2.8.4"
@@ -15,11 +16,11 @@ navigationCompose = "2.8.5"
 
 ktor = "3.0.2"
 kotlinxSerialization = "1.7.3"
+google-services = "4.4.0"
 
 # MCP
 kotlin-sdk = "0.8.1"
 logging = "2.0.17"
-anthropic = "2.11.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -59,8 +60,10 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 # MCP
 mcp-kotlin-sdk = { group = "io.modelcontextprotocol", name = "kotlin-sdk", version.ref = "kotlin-sdk" }
 mcp-logging = { group = "org.slf4j", name = "slf4j-nop", version.ref = "logging" }
-mcp-anthropic = { group = "com.anthropic", name = "anthropic-java", version.ref = "anthropic" }
 
+
+#Notificarion
+firebase-messaging-ktx = { module = "com.google.firebase:firebase-messaging-ktx", version.ref = "firebaseMessagingKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -70,4 +73,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-
+google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
