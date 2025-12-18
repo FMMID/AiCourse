@@ -5,14 +5,10 @@ import com.example.aicourse.backend.plugins.createMcpServer
 import com.example.aicourse.backend.routes.mcpRoutes
 import com.example.aicourse.backend.routes.notesNotificationSettingRoutes
 import com.example.aicourse.backend.services.startServices
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.routing.*
-import io.ktor.server.sse.*
-import kotlinx.serialization.json.Json
 
 fun main() {
     embeddedServer(

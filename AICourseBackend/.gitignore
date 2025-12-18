@@ -36,3 +36,4 @@ out/
 .vscode/
 /local/
 /.env
+/firebase-service.json

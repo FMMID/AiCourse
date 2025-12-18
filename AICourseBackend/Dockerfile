@@ -36,6 +36,8 @@ RUN keytool -import -trustcacerts -alias "russian-root-ca" \
 
 # Копируем собранный jar
 COPY --from=build /app/build/libs/*-all.jar app.jar
+# Копируем ключ Firebase в контейнер (в папку /app)
+COPY firebase-service.json .
 
 EXPOSE 8080
 

@@ -11,7 +11,7 @@ import java.io.FileInputStream
 object FirebasePushService {
 
     fun start() {
-        val serviceAccount = FileInputStream("local/mikfed-68167-firebase-adminsdk-fbsvc-e33bc512a2.json")
+        val serviceAccount = FileInputStream("firebase-service.json")
         val options = FirebaseOptions.builder()
             .setCredentials(GoogleCredentials.fromStream(serviceAccount))
             .build()
