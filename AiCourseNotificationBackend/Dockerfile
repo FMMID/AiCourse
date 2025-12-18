@@ -1,13 +1,19 @@
-FROM gradle:8.5-jdk17 AS build
-COPY --chown=gradle:gradle . /home/gradle/src
-WORKDIR /home/gradle/src
+FROM gradle:8.11.1-jdk17 AS build
+
+WORKDIR /app
+
+# Копируем файлы конфигурации Gradle
+COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+# Копируем папку gradle (если она есть, иначе эта строка не критична, если gradle wrapper не используется внутри)
+COPY gradle ./gradle
+COPY src ./src
+
+# Собираем
 RUN gradle buildFatJar --no-daemon || gradle build --no-daemon
 
+# ЭТАП 2: Запуск
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-# Обрати внимание: путь может отличаться в зависимости от того, как собирает gradle
-# Обычно это build/libs/имя-проекта-all.jar.
-# Звездочка * поможет найти любой jar.
-COPY --from=build /home/gradle/src/build/libs/*.jar app.jar
+COPY --from=build /app/build/libs/*.jar app.jar
 EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "app.jar"]
