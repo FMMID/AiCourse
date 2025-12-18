@@ -3,14 +3,12 @@ package com.example.aicourse.backend
 import com.example.aicourse.backend.plugins.configureHttp
 import com.example.aicourse.backend.plugins.createMcpServer
 import com.example.aicourse.backend.routes.mcpRoutes
-import io.ktor.serialization.kotlinx.json.*
+import com.example.aicourse.backend.routes.notesNotificationSettingRoutes
+import com.example.aicourse.backend.services.startServices
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.routing.*
-import io.ktor.server.sse.*
-import kotlinx.serialization.json.Json
 
 fun main() {
     embeddedServer(
@@ -25,16 +23,15 @@ fun Application.module() {
     // 1. Конфигурация плагинов
     configureHttp() // CORS + Monitoring
 
-    install(ContentNegotiation) {
-        json(Json { prettyPrint = true; isLenient = true; ignoreUnknownKeys = true })
-    }
-    install(SSE)
-
     // 2. Инициализация MCP сервера
     val mcpServer = createMcpServer()
 
     // 3. Маршрутизация
     routing {
         mcpRoutes(mcpServer)
+        notesNotificationSettingRoutes()
     }
+
+    // 4. Запуск дополнительных сервисов
+    startServices()
 }

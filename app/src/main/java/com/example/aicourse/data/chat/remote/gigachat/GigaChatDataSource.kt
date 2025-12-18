@@ -53,7 +53,8 @@ import java.util.UUID
  */
 class GigaChatDataSource(
     private val authorizationKey: String,
-    private val mcpClient: McpClient
+    private val mcpClient: McpClient,
+    private val userId: String
 ) : BaseChatRemoteDataSource() {
 
     companion object {
@@ -68,7 +69,6 @@ class GigaChatDataSource(
     private val json = Json { ignoreUnknownKeys = true }
     private val tokenMutex = Mutex()
 
-    private var isMcpClientConnected: Boolean = false
     private var cachedToken: String? = null
     private var tokenExpiresAt: Long = 0
 
@@ -101,7 +101,8 @@ class GigaChatDataSource(
         config: ChatConfig,
         messageHistory: List<Message>,
         recursionDepth: Int,
-        additionalMessages: List<ChatMessage> = emptyList() // Для хранения цепочки вызовов функций
+        additionalMessages: List<ChatMessage> = emptyList(), // Для хранения цепочки вызовов функций
+        forceTextMode: Boolean = false // [FIX] Флаг для принудительного отключения функций при зацикливании
     ): ChatResponseData {
         if (recursionDepth > 5) throw Exception("Too many function calls")
 
@@ -117,10 +118,7 @@ class GigaChatDataSource(
 
             val fullMessages = baseMessages + additionalMessages
 
-            if (!isMcpClientConnected) {
-                mcpClient.connect()
-                isMcpClientConnected = true
-            }
+            mcpClient.connect()
 
             // TODO: Можно кэшировать tools, чтобы не дергать сервер каждый раз
             val mcpTools = try {
@@ -133,20 +131,35 @@ class GigaChatDataSource(
             val gigaFunctions = if (mcpTools.isNotEmpty()) {
                 mcpTools.map { tool ->
                     val schemaString = json.encodeToString(ToolSchema.serializer(), tool.inputSchema)
+                    val rawParameters = json.parseToJsonElement(schemaString).jsonObject
+
+                    val fixedParameters = if (!rawParameters.containsKey("properties")) {
+                        JsonObject(rawParameters + ("properties" to JsonObject(emptyMap())))
+                    } else {
+                        rawParameters
+                    }
 
                     GigaFunction(
                         name = tool.name,
                         description = tool.description,
-                        parameters = json.parseToJsonElement(schemaString).jsonObject
+                        parameters = fixedParameters
                     )
                 }
             } else null
 
+            val functionCallMode = if (forceTextMode) {
+                "none"
+            } else if (gigaFunctions != null) {
+                "auto"
+            } else {
+                null
+            }
+
             val request = ChatCompletionRequest(
                 model = config.model ?: DEFAULT_MODEL,
                 messages = fullMessages,
-                functions = gigaFunctions, // Передаем инструменты
-                functionCall = if (gigaFunctions != null) "auto" else null,
+                functions = if (forceTextMode) null else gigaFunctions, // Не передаем функции, если форсируем текст (для надежности)
+                functionCall = functionCallMode,
                 temperature = config.temperature.toDouble(),
                 topP = config.topP.toDouble(),
                 maxTokens = config.maxTokens
@@ -173,40 +186,55 @@ class GigaChatDataSource(
             if (message.functionCall != null) {
                 val functionName = message.functionCall.name
                 val argsObject = message.functionCall.arguments
-
                 val stateId = message.functionsStateId
                 if (stateId.isNullOrBlank()) {
                     Log.e(logTag, "CRITICAL: functions_state_id is MISSING in GigaChat response! Request chain will fail.")
                 } else {
                     Log.d(logTag, "Captured functions_state_id: $stateId")
                 }
-
                 Log.d(logTag, "Calling MCP tool: $functionName")
+
+
+                val lastCall = additionalMessages.lastOrNull { it.role == ChatMessage.ROLE_ASSISTANT }
+                if (lastCall != null && lastCall.functionCall != null &&
+                    lastCall.functionCall.name == functionName &&
+                    lastCall.functionCall.arguments.toString() == argsObject.toString()
+                ) {
+
+                    Log.w(logTag, "⚠️ Loop detected for tool '$functionName'. Forcing text response.")
+                    return sendMessageInternal(config, messageHistory, recursionDepth, additionalMessages, forceTextMode = true)
+                }
 
                 val argsMap = argsObject.entries.associate { (key, element) ->
                     key to element.toPrimitiveValue()
-                }
+                }.toMutableMap()
+
+                argsMap["userId"] = userId
+
+                Log.d(logTag, "Injected userId into tool arguments: $userId")
 
                 val mcpResult = mcpClient.callTool(functionName, argsMap)
-
                 val toolResultRawText = mcpResult.content.joinToString("\n") {
                     (it as? io.modelcontextprotocol.kotlin.sdk.types.TextContent)?.text ?: ""
                 }
 
                 val toolResultJsonString = json.encodeToString(mapOf("result" to toolResultRawText))
-
                 val newAdditionalMessages = additionalMessages.toMutableList().apply {
 
-                    add(message.copy(
-                        content = null,
-                        functionsStateId = stateId // Явно передаем ID
-                    ))
+                    add(
+                        message.copy(
+                            content = null,
+                            functionsStateId = stateId // Явно передаем ID
+                        )
+                    )
 
-                    add(ChatMessage(
-                        role = ChatMessage.ROLE_FUNCTION,
-                        name = functionName,
-                        content = toolResultJsonString,
-                    ))
+                    add(
+                        ChatMessage(
+                            role = ChatMessage.ROLE_FUNCTION,
+                            name = functionName,
+                            content = toolResultJsonString,
+                        )
+                    )
                 }
 
                 return sendMessageInternal(config, messageHistory, recursionDepth + 1, newAdditionalMessages)
