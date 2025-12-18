@@ -2,6 +2,7 @@ package com.example.aicourse.di
 
 import android.app.Application
 import android.content.Context
+import com.example.aicourse.data.UserSession
 import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.local.ChatLocalDataSource.Companion.MAIN_CHAT_ID
 import com.example.aicourse.data.chat.local.RoomChatLocalDataSource
@@ -75,7 +76,13 @@ object AppInjector {
     fun createChatRepository(context: Context, settingsChatModel: SettingsChatModel): ChatRepository {
         val remoteDataSource = when (val apiImplementation = settingsChatModel.currentUseApiImplementation) {
             ApiImplementation.GIGA_CHAT -> {
-                existDataSources.getOrPut(ApiImplementation.GIGA_CHAT) { GigaChatDataSource(apiImplementation.key, mcpClient) }
+                existDataSources.getOrPut(ApiImplementation.GIGA_CHAT) {
+                    GigaChatDataSource(
+                        authorizationKey = apiImplementation.key,
+                        mcpClient = mcpClient,
+                        userId = UserSession.CURRENT_USER_ID
+                    )
+                }
             }
 
             ApiImplementation.HUGGING_FACE -> {

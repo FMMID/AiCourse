@@ -53,7 +53,8 @@ import java.util.UUID
  */
 class GigaChatDataSource(
     private val authorizationKey: String,
-    private val mcpClient: McpClient
+    private val mcpClient: McpClient,
+    private val userId: String
 ) : BaseChatRemoteDataSource() {
 
     companion object {
@@ -133,11 +134,18 @@ class GigaChatDataSource(
             val gigaFunctions = if (mcpTools.isNotEmpty()) {
                 mcpTools.map { tool ->
                     val schemaString = json.encodeToString(ToolSchema.serializer(), tool.inputSchema)
+                    val rawParameters = json.parseToJsonElement(schemaString).jsonObject
+
+                    val fixedParameters = if (!rawParameters.containsKey("properties")) {
+                        JsonObject(rawParameters + ("properties" to JsonObject(emptyMap())))
+                    } else {
+                        rawParameters
+                    }
 
                     GigaFunction(
                         name = tool.name,
                         description = tool.description,
-                        parameters = json.parseToJsonElement(schemaString).jsonObject
+                        parameters = fixedParameters
                     )
                 }
             } else null
@@ -173,40 +181,44 @@ class GigaChatDataSource(
             if (message.functionCall != null) {
                 val functionName = message.functionCall.name
                 val argsObject = message.functionCall.arguments
-
                 val stateId = message.functionsStateId
                 if (stateId.isNullOrBlank()) {
                     Log.e(logTag, "CRITICAL: functions_state_id is MISSING in GigaChat response! Request chain will fail.")
                 } else {
                     Log.d(logTag, "Captured functions_state_id: $stateId")
                 }
-
                 Log.d(logTag, "Calling MCP tool: $functionName")
 
                 val argsMap = argsObject.entries.associate { (key, element) ->
                     key to element.toPrimitiveValue()
-                }
+                }.toMutableMap()
+
+                argsMap["userId"] = userId
+
+                Log.d(logTag, "Injected userId into tool arguments: $userId")
 
                 val mcpResult = mcpClient.callTool(functionName, argsMap)
-
                 val toolResultRawText = mcpResult.content.joinToString("\n") {
                     (it as? io.modelcontextprotocol.kotlin.sdk.types.TextContent)?.text ?: ""
                 }
 
                 val toolResultJsonString = json.encodeToString(mapOf("result" to toolResultRawText))
-
                 val newAdditionalMessages = additionalMessages.toMutableList().apply {
 
-                    add(message.copy(
-                        content = null,
-                        functionsStateId = stateId // Явно передаем ID
-                    ))
+                    add(
+                        message.copy(
+                            content = null,
+                            functionsStateId = stateId // Явно передаем ID
+                        )
+                    )
 
-                    add(ChatMessage(
-                        role = ChatMessage.ROLE_FUNCTION,
-                        name = functionName,
-                        content = toolResultJsonString,
-                    ))
+                    add(
+                        ChatMessage(
+                            role = ChatMessage.ROLE_FUNCTION,
+                            name = functionName,
+                            content = toolResultJsonString,
+                        )
+                    )
                 }
 
                 return sendMessageInternal(config, messageHistory, recursionDepth + 1, newAdditionalMessages)
