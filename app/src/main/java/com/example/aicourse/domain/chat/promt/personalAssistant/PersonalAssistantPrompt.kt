@@ -11,10 +11,6 @@ class PersonalAssistantPrompt(
     override val contentResourceId: Int = R.raw.personal_assistant_prompt,
 ) : SystemPrompt<PlainTextResponse> {
 
-    /**
-     * PlainTextPrompt - fallback промпт, не имеет триггеров
-     * @return всегда false
-     */
     override fun matches(message: String): Boolean = false
 
     override fun parseResponse(rawResponse: String): PlainTextResponse {
