@@ -32,7 +32,8 @@ object NotesService {
         return "Заметка сохранена для $userId. Всего: ${userData.notes.size}"
     }
 
-    fun markNoteAsCompleted(userId: String, noteTextSnippet: String): String {
+    // Возвращает true, если задача найдена и обновлена, иначе false
+    fun markNoteAsCompleted(userId: String, noteTextSnippet: String): Boolean {
         val data = loadUserData(userId)
 
         val note = data.notes.find {
@@ -42,9 +43,9 @@ object NotesService {
         return if (note != null) {
             note.isCompleted = true
             saveUserData(userId, data)
-            "Отлично! Задача \"${note.text}\" отмечена как выполненная."
+            true
         } else {
-            "Не удалось найти активную задачу, похожую на \"$noteTextSnippet\"."
+            false
         }
     }
 

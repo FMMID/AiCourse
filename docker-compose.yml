@@ -1,0 +1,22 @@
+services:
+  # Сервис 1: Заметки пользователя
+  mcp-notes-server:
+    build: ./AiCourseBackend
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      - LOG_LEVEL=INFO
+    env_file:
+      - .env
+
+  # Сервис 2: Уведомления
+  mcp-notification-server:
+    build: ./AiCourseNotificationBackend
+    ports:
+      - "8081:8081"
+    restart: always
+    environment:
+      - LOG_LEVEL=INFO
+    env_file:
+      - .env

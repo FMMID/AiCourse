@@ -121,7 +121,7 @@ fun McpClientSection(
 private fun McpClientSectionNoToolsPreview() {
     AiCourseTheme {
         McpClientSection(
-            mcpClientType = McpClientType.LOCAL_WEATHER,
+            mcpClientType = McpClientType.NOTE_SERVICE,
             tools = null,
             onDownloadClick = {},
             modifier = Modifier.padding(16.dp)
@@ -134,7 +134,7 @@ private fun McpClientSectionNoToolsPreview() {
 private fun McpClientSectionExpandedPreview() {
     AiCourseTheme {
         McpClientSection(
-            mcpClientType = McpClientType.LOCAL_WEATHER,
+            mcpClientType = McpClientType.NOTE_SERVICE,
             tools = listOf(
                 Tool(
                     name = "get_weather",
