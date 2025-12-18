@@ -1,5 +1,6 @@
 package com.example.aicourse.backend.tools
 
+import com.example.aicourse.backend.services.notes.FALLBACK_USER
 import com.example.aicourse.backend.services.notes.NotesService
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -30,13 +31,15 @@ private fun Server.registerAddNoteTool() {
         )
     ) { callToolRequest ->
         val task = callToolRequest.arguments?.get("text")?.jsonPrimitive?.content
-        val userId = callToolRequest.arguments?.get("userId")?.jsonPrimitive?.content ?: "unknown_user"
+        val userId = callToolRequest.arguments?.get("userId")?.jsonPrimitive?.content ?: FALLBACK_USER
 
         val (resultText, isError) = if (task != null) {
             NotesService.addNote(userId, task) to false
         } else {
             "No data found in property: \"text\"" to true
         }
+
+        println("MCP: Adding note for userId='$userId'. Task='$task'")
 
         CallToolResult(
             content = listOf(TextContent(text = resultText)),
@@ -51,7 +54,7 @@ private fun Server.registerGetRecentNotes() {
         description = "Retrieves all saved notes and tasks from the database. Use this to create a summary or remind the user about their plans.",
         inputSchema = ToolSchema(properties = null)
     ) { callToolRequest ->
-        val userId = callToolRequest.arguments?.get("userId")?.jsonPrimitive?.content ?: "unknown_user"
+        val userId = callToolRequest.arguments?.get("userId")?.jsonPrimitive?.content ?: FALLBACK_USER
         val notes = NotesService.getAllNotes(userId)
         val notesText = if (notes.isEmpty()) {
             "Список заметок пуст."

@@ -4,6 +4,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 
+const val FALLBACK_USER = "unknown_user"
+
 @Serializable
 data class Note(val text: String, val timestamp: Long)
 
@@ -20,12 +22,11 @@ object NotesService {
     private fun getFileForUser(userId: String) = File(dataDir, "$userId.json")
 
     fun addNote(userId: String, text: String): String {
-        val notes = getAllNotes(userId).toMutableList()
-        notes.add(Note(text, System.currentTimeMillis()))
-        getFileForUser(userId).writeText(json.encodeToString(notes))
-        return "Заметка сохранена для $userId. Всего: ${notes.size}"
+        val userData = loadUserData(userId)
+        userData.notes.add(Note(text, System.currentTimeMillis()))
+        saveUserData(userId, userData)
+        return "Заметка сохранена для $userId. Всего: ${userData.notes.size}"
     }
-
     fun updateToken(userId: String, token: String) {
         val data = loadUserData(userId)
         data.fcmToken = token
