@@ -1,6 +1,7 @@
 package com.example.aicourse.data.notifications
 
 import android.util.Log
+import com.example.aicourse.mcpclient.UserSession
 import com.example.aicourse.data.notifications.model.RegistrationRequest
 import com.google.firebase.messaging.FirebaseMessaging
 import io.ktor.client.HttpClient
@@ -18,8 +19,7 @@ import kotlinx.serialization.json.Json
 
 //TODO отрефачить потом
 object PushTokenManager {
-//    private const val SERVER_URL = "https://95.81.96.66.sslip.io//register-push-token"
-    private const val SERVER_URL = "http://10.0.2.2:8080/register-push-token"
+    private const val SERVER_URL = "${UserSession.BASE_URL}register-push-token"
 
     private val client = HttpClient {
         install(ContentNegotiation) {

@@ -2,7 +2,7 @@ package com.example.aicourse.di
 
 import android.app.Application
 import android.content.Context
-import com.example.aicourse.data.UserSession
+import com.example.aicourse.mcpclient.UserSession
 import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.local.ChatLocalDataSource.Companion.MAIN_CHAT_ID
 import com.example.aicourse.data.chat.local.RoomChatLocalDataSource

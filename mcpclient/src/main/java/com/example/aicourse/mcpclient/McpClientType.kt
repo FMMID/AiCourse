@@ -9,6 +9,6 @@ enum class McpClientType(val impName: String, val impVersion: String, val server
     ANIME_SEARCH(
         impName = "AndroidAnimeClient",
         impVersion = "1.0.0",
-        serverUrl = "https://95.81.96.66.sslip.io/sse"
+        serverUrl = "${UserSession.BASE_URL}/sse"
     )
 }

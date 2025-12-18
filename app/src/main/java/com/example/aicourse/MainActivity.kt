@@ -6,7 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.aicourse.data.UserSession
+import com.example.aicourse.mcpclient.UserSession
 import com.example.aicourse.data.notifications.PushTokenManager
 import com.example.aicourse.presentation.chat.ChatScreen
 import com.example.aicourse.ui.theme.AiCourseTheme
