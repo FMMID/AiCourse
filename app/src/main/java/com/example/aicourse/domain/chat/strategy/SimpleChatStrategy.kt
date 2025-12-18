@@ -12,6 +12,7 @@ import com.example.aicourse.domain.chat.promt.dynamicSystemPrompt.DynamicSystemP
 import com.example.aicourse.domain.chat.promt.dynamicTemperature.DynamicTemperaturePrompt
 import com.example.aicourse.domain.chat.promt.json.JsonOutputPrompt
 import com.example.aicourse.domain.chat.promt.pc.BuildComputerAssistantPrompt
+import com.example.aicourse.domain.chat.promt.personalAssistant.PersonalAssistantPrompt
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
@@ -139,7 +140,7 @@ class SimpleChatStrategy(
             chatMessages = mutableListOf(),
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
-            activeSystemPrompt = PlainTextPrompt()
+            activeSystemPrompt = PersonalAssistantPrompt()
         )
     }
 
