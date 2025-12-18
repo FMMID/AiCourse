@@ -53,7 +53,7 @@ import java.util.UUID
  */
 class GigaChatDataSource(
     private val authorizationKey: String,
-    private val mcpClient: McpClient,
+    private val mcpClients: List<McpClient>,
     private val userId: String
 ) : BaseChatRemoteDataSource() {
 
@@ -65,23 +65,17 @@ class GigaChatDataSource(
     }
 
     override val logTag: String = "GigaChatDataSource"
-
     private val json = Json { ignoreUnknownKeys = true }
     private val tokenMutex = Mutex()
-
+    private val toolOwners = mutableMapOf<String, McpClient>()
     private var cachedToken: String? = null
     private var tokenExpiresAt: Long = 0
 
-    /**
-     * Резолвит тип модели в конкретный идентификатор модели GigaChat
-     * Примечание: GigaChat может иметь разные модели (GigaChat, GigaChat-Plus, GigaChat-Pro)
-     * На данный момент используем одну модель для всех типов
-     */
     override fun resolveModel(modelType: ModelType): String {
         return when (modelType) {
-            ModelType.Fast -> "GigaChat" // Быстрая модель
-            ModelType.Balanced -> "GigaChat-Pro" // Сбалансированная (пока та же)
-            ModelType.Powerful -> "GigaChat-Max" // Мощная (можно использовать GigaChat-Pro если доступна)
+            ModelType.Fast -> "GigaChat"
+            ModelType.Balanced -> "GigaChat-Pro"
+            ModelType.Powerful -> "GigaChat-Max"
         }
     }
 
@@ -101,8 +95,8 @@ class GigaChatDataSource(
         config: ChatConfig,
         messageHistory: List<Message>,
         recursionDepth: Int,
-        additionalMessages: List<ChatMessage> = emptyList(), // Для хранения цепочки вызовов функций
-        forceTextMode: Boolean = false // [FIX] Флаг для принудительного отключения функций при зацикливании
+        additionalMessages: List<ChatMessage> = emptyList(),
+        forceTextMode: Boolean = false
     ): ChatResponseData {
         if (recursionDepth > 5) throw Exception("Too many function calls")
 
@@ -118,18 +112,23 @@ class GigaChatDataSource(
 
             val fullMessages = baseMessages + additionalMessages
 
-            mcpClient.connect()
+            val allTools = mutableListOf<io.modelcontextprotocol.kotlin.sdk.types.Tool>()
 
-            // TODO: Можно кэшировать tools, чтобы не дергать сервер каждый раз
-            val mcpTools = try {
-                mcpClient.getTools()
-            } catch (e: Exception) {
-                Log.e(logTag, "Failed to get MCP tools", e)
-                emptyList()
+            mcpClients.forEach { client ->
+                try {
+                    client.connect()
+                    val tools = client.getTools()
+                    tools.forEach { tool ->
+                        toolOwners[tool.name] = client
+                    }
+                    allTools.addAll(tools)
+                } catch (e: Exception) {
+                    Log.e(logTag, "Error fetching tools from one of the clients", e)
+                }
             }
 
-            val gigaFunctions = if (mcpTools.isNotEmpty()) {
-                mcpTools.map { tool ->
+            val gigaFunctions = if (allTools.isNotEmpty()) {
+                allTools.map { tool ->
                     val schemaString = json.encodeToString(ToolSchema.serializer(), tool.inputSchema)
                     val rawParameters = json.parseToJsonElement(schemaString).jsonObject
 
@@ -158,7 +157,7 @@ class GigaChatDataSource(
             val request = ChatCompletionRequest(
                 model = config.model ?: DEFAULT_MODEL,
                 messages = fullMessages,
-                functions = if (forceTextMode) null else gigaFunctions, // Не передаем функции, если форсируем текст (для надежности)
+                functions = if (forceTextMode) null else gigaFunctions,
                 functionCall = functionCallMode,
                 temperature = config.temperature.toDouble(),
                 topP = config.topP.toDouble(),
@@ -169,7 +168,6 @@ class GigaChatDataSource(
                 header(HttpHeaders.Authorization, "Bearer $token")
                 contentType(ContentType.Application.Json)
                 setBody(request)
-
                 Log.d(logTag, "Sending JSON to GigaChat: $request")
             }
 
@@ -181,26 +179,20 @@ class GigaChatDataSource(
 
             val response: ChatCompletionResponse = httpResponse.body()
             val choice = response.choices.firstOrNull() ?: throw Exception("Empty response")
-            val message = choice.message // Тут теперь есть functions_state_id внутри
+            val message = choice.message
 
             if (message.functionCall != null) {
                 val functionName = message.functionCall.name
                 val argsObject = message.functionCall.arguments
                 val stateId = message.functionsStateId
-                if (stateId.isNullOrBlank()) {
-                    Log.e(logTag, "CRITICAL: functions_state_id is MISSING in GigaChat response! Request chain will fail.")
-                } else {
-                    Log.d(logTag, "Captured functions_state_id: $stateId")
-                }
-                Log.d(logTag, "Calling MCP tool: $functionName")
 
+                Log.d(logTag, "Calling MCP tool: $functionName")
 
                 val lastCall = additionalMessages.lastOrNull { it.role == ChatMessage.ROLE_ASSISTANT }
                 if (lastCall != null && lastCall.functionCall != null &&
                     lastCall.functionCall.name == functionName &&
                     lastCall.functionCall.arguments.toString() == argsObject.toString()
                 ) {
-
                     Log.w(logTag, "⚠️ Loop detected for tool '$functionName'. Forcing text response.")
                     return sendMessageInternal(config, messageHistory, recursionDepth, additionalMessages, forceTextMode = true)
                 }
@@ -210,37 +202,27 @@ class GigaChatDataSource(
                 }.toMutableMap()
 
                 argsMap["userId"] = userId
-
                 Log.d(logTag, "Injected userId into tool arguments: $userId")
 
-                val mcpResult = mcpClient.callTool(functionName, argsMap)
+                val targetClient = toolOwners[functionName]
+                    ?: throw IllegalStateException("No MCP client found for tool: $functionName")
+
+                val mcpResult = targetClient.callTool(functionName, argsMap)
+
                 val toolResultRawText = mcpResult.content.joinToString("\n") {
                     (it as? io.modelcontextprotocol.kotlin.sdk.types.TextContent)?.text ?: ""
                 }
 
                 val toolResultJsonString = json.encodeToString(mapOf("result" to toolResultRawText))
                 val newAdditionalMessages = additionalMessages.toMutableList().apply {
-
-                    add(
-                        message.copy(
-                            content = null,
-                            functionsStateId = stateId // Явно передаем ID
-                        )
-                    )
-
-                    add(
-                        ChatMessage(
-                            role = ChatMessage.ROLE_FUNCTION,
-                            name = functionName,
-                            content = toolResultJsonString,
-                        )
-                    )
+                    add(message.copy(content = null, functionsStateId = stateId))
+                    add(ChatMessage(role = ChatMessage.ROLE_FUNCTION, name = functionName, content = toolResultJsonString))
                 }
 
                 return sendMessageInternal(config, messageHistory, recursionDepth + 1, newAdditionalMessages)
             }
             return ChatResponseData(
-                content = message.content ?: "", // Content может быть null при function_call
+                content = message.content ?: "",
                 promptTokens = response.usage?.promptTokens,
                 completionTokens = response.usage?.completionTokens,
                 totalTokens = response.usage?.totalTokens,
@@ -262,7 +244,6 @@ class GigaChatDataSource(
                 else if (doubleOrNull != null) double
                 else content
             }
-
             is JsonArray -> map { it.toPrimitiveValue() }
             is JsonObject -> entries.associate { it.key to it.value.toPrimitiveValue() }
             is JsonNull -> null
@@ -270,46 +251,26 @@ class GigaChatDataSource(
         }
     }
 
-    /**
-     * Получает валидный токен (использует кэшированный или запрашивает новый)
-     */
     private suspend fun getValidToken(): String = tokenMutex.withLock {
         val currentTime = System.currentTimeMillis()
-
         if (cachedToken != null && tokenExpiresAt > currentTime + 60_000) {
             return@withLock cachedToken!!
         }
-
-        Log.d(logTag, "Requesting new OAuth token from GigaChat")
         val newToken = fetchOAuthToken()
         cachedToken = newToken.accessToken
         tokenExpiresAt = newToken.expiresAt
-
         return@withLock newToken.accessToken
     }
 
-    /**
-     * Запрашивает OAuth токен из GigaChat API
-     * https://developers.sber.ru/docs/ru/gigachat/api/reference/rest/post-token
-     */
     private suspend fun fetchOAuthToken(): TokenResponse {
-        try {
-            val rqUID = UUID.randomUUID().toString()
-
-            val response: TokenResponse = httpClient.post(OAUTH_URL) {
-                header(HttpHeaders.Authorization, "Basic $authorizationKey")
-                header("RqUID", rqUID)
-                contentType(ContentType.Application.FormUrlEncoded)
-                setBody(FormDataContent(Parameters.build { append("scope", SCOPE) }))
-            }.body()
-
-            Log.d(logTag, "Successfully obtained OAuth token, expires at: ${response.expiresAt}")
-            return response
-
-        } catch (e: Exception) {
-            Log.e(logTag, "Error fetching OAuth token", e)
-            throw Exception("Ошибка получения токена авторизации: ${e.message}", e)
-        }
+        val rqUID = UUID.randomUUID().toString()
+        val response: TokenResponse = httpClient.post(OAUTH_URL) {
+            header(HttpHeaders.Authorization, "Basic $authorizationKey")
+            header("RqUID", rqUID)
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(Parameters.build { append("scope", SCOPE) }))
+        }.body()
+        return response
     }
 
     override suspend fun sendSummarizationRequest(
@@ -320,14 +281,12 @@ class GigaChatDataSource(
         maxTokens: Int
     ): ContextSummaryInfo = withContext(Dispatchers.IO) {
         val token = getValidToken()
-
         val messages = buildMessagesList<ChatMessage>(
             systemContent = systemPrompt,
             messageHistory = messageHistory,
             roleSystem = ChatMessage.ROLE_SYSTEM,
             messageTypeToRole = ChatMessage::fromMessageType
         )
-
         val request = ChatCompletionRequest(
             model = DEFAULT_MODEL,
             messages = messages,
@@ -335,17 +294,12 @@ class GigaChatDataSource(
             topP = topP,
             maxTokens = maxTokens
         )
-
         val response: ChatCompletionResponse = httpClient.post("$CHAT_API_URL/chat/completions") {
             header(HttpHeaders.Authorization, "Bearer $token")
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
-
-        val summary = response.choices.firstOrNull()?.message?.content
-            ?: throw Exception("Пустой ответ от GigaChat API при суммаризации")
-
-        Log.d(logTag, "Summarization completed, tokens: ${response.usage?.totalTokens}")
+        val summary = response.choices.firstOrNull()?.message?.content ?: ""
         return@withContext ContextSummaryInfo(summary, response.usage?.totalTokens ?: 0)
     }
 }

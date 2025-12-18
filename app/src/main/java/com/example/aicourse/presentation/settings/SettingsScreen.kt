@@ -133,7 +133,7 @@ private fun SettingsScreenPreview() {
             settingsUiState = SettingsUiState(
                 availableMcpClients = McpClientType.entries,
                 downloadedMcpClientTools = mapOf(
-                    McpClientType.LOCAL_WEATHER to listOf(
+                    McpClientType.NOTE_SERVICE to listOf(
                         Tool(
                             name = "get_weather",
                             title = "Get Weather",

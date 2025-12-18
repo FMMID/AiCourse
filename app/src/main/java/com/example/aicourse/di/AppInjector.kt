@@ -2,7 +2,6 @@ package com.example.aicourse.di
 
 import android.app.Application
 import android.content.Context
-import com.example.aicourse.mcpclient.UserSession
 import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.local.ChatLocalDataSource.Companion.MAIN_CHAT_ID
 import com.example.aicourse.data.chat.local.RoomChatLocalDataSource
@@ -28,6 +27,7 @@ import com.example.aicourse.domain.settings.repository.McpRepository
 import com.example.aicourse.domain.tools.context.ContextRepository
 import com.example.aicourse.mcpclient.McpClientFactory
 import com.example.aicourse.mcpclient.McpClientType
+import com.example.aicourse.mcpclient.UserSession
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -35,7 +35,12 @@ import kotlinx.coroutines.runBlocking
 // TODO Заменить на Dependency Injection (Hilt, Koin, и т.д.)
 object AppInjector {
 
-    val mcpClient = McpClientFactory.createMcpClient(McpClientType.ANIME_SEARCH) // TODO пока хардкодим
+    // TODO пока хардкодим
+    val mcpClients = listOf(
+        McpClientFactory.createMcpClient(McpClientType.NOTE_SERVICE),
+        McpClientFactory.createMcpClient(McpClientType.SEND_INFORMATION_SERVICE)
+
+    )
     val existDataSources: MutableMap<ApiImplementation, BaseChatRemoteDataSource> = mutableMapOf()
     var mcpRemoteDatabase: McpRemoteDataSource? = null
     var chatLocalDataSource: ChatLocalDataSource? = null
@@ -79,7 +84,7 @@ object AppInjector {
                 existDataSources.getOrPut(ApiImplementation.GIGA_CHAT) {
                     GigaChatDataSource(
                         authorizationKey = apiImplementation.key,
-                        mcpClient = mcpClient,
+                        mcpClients = mcpClients,
                         userId = UserSession.CURRENT_USER_ID
                     )
                 }
