@@ -8,7 +8,7 @@ services:
     environment:
       - LOG_LEVEL=INFO
     env_file:
-      - ./AiCourseBackend/.env
+      - .env
 
   # Сервис 2: Уведомления
   mcp-notification-server:
@@ -18,3 +18,5 @@ services:
     restart: always
     environment:
       - LOG_LEVEL=INFO
+    env_file:
+      - .env
