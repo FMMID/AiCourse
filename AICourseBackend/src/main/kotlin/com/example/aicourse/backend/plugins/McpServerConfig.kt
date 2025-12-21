@@ -1,5 +1,6 @@
 package com.example.aicourse.backend.plugins
 
+import com.example.aicourse.backend.tools.registerAdbTool
 import com.example.aicourse.backend.tools.registerNotesTools
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
@@ -17,6 +18,7 @@ fun createMcpServer(): Server {
     )
 
     server.registerNotesTools()
+    server.registerAdbTool()
 
     return server
 }

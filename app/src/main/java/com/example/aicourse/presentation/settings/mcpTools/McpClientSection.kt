@@ -29,8 +29,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.aicourse.BuildConfig
 import com.example.aicourse.R
-import com.example.aicourse.mcpclient.McpClientType
+import com.example.aicourse.mcpclient.McpClientConfig
 import com.example.aicourse.ui.theme.AiCourseTheme
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
@@ -40,12 +41,12 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
  */
 @Composable
 fun McpClientSection(
-    mcpClientType: McpClientType,
+    mcpClientConfig: McpClientConfig,
     tools: List<Tool>?,
-    onDownloadClick: (McpClientType) -> Unit,
+    onDownloadClick: (McpClientConfig) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isExpanded by remember(mcpClientType, tools?.size) { mutableStateOf(tools != null) }
+    var isExpanded by remember(mcpClientConfig, tools?.size) { mutableStateOf(tools != null) }
 
     Card(
         modifier = modifier,
@@ -65,7 +66,7 @@ fun McpClientSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = mcpClientType.name,
+                    text = mcpClientConfig.serverUrl,
                     style = MaterialTheme.typography.titleMedium
                 )
 
@@ -87,7 +88,7 @@ fun McpClientSection(
             // Download button (only visible when tools == null)
             if (tools == null) {
                 Button(
-                    onClick = { onDownloadClick(mcpClientType) },
+                    onClick = { onDownloadClick(mcpClientConfig) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = stringResource(R.string.mcp_get_tools_button))
@@ -121,7 +122,7 @@ fun McpClientSection(
 private fun McpClientSectionNoToolsPreview() {
     AiCourseTheme {
         McpClientSection(
-            mcpClientType = McpClientType.NOTE_SERVICE,
+            mcpClientConfig = McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL),
             tools = null,
             onDownloadClick = {},
             modifier = Modifier.padding(16.dp)
@@ -134,7 +135,7 @@ private fun McpClientSectionNoToolsPreview() {
 private fun McpClientSectionExpandedPreview() {
     AiCourseTheme {
         McpClientSection(
-            mcpClientType = McpClientType.NOTE_SERVICE,
+            mcpClientConfig = McpClientConfig(BuildConfig.MCP_NOTE_URL),
             tools = listOf(
                 Tool(
                     name = "get_weather",

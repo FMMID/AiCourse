@@ -1,25 +1,25 @@
 package com.example.aicourse.data.settings.remote
 
 import com.example.aicourse.mcpclient.McpClient
+import com.example.aicourse.mcpclient.McpClientConfig
 import com.example.aicourse.mcpclient.McpClientFactory
-import com.example.aicourse.mcpclient.McpClientType
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 
 class McpRemoteDataSource {
 
-    val mapOfMcpClients = mutableMapOf<McpClientType, McpClient>()
+    val mapOfMcpClients = mutableMapOf<McpClientConfig, McpClient>()
 
-    suspend fun getAvailableTools(mcpClientType: McpClientType): List<Tool> {
-        return getOrInitMcpClient(mcpClientType).getTools()
+    suspend fun getAvailableTools(mcpClientConfig: McpClientConfig): List<Tool> {
+        return getOrInitMcpClient(mcpClientConfig).getTools()
     }
 
-    suspend fun shutdown(mcpClientType: McpClientType) {
-        mapOfMcpClients[mcpClientType]?.shutdown()
+    suspend fun shutdown(mcpClientConfig: McpClientConfig) {
+        mapOfMcpClients[mcpClientConfig]?.shutdown()
     }
 
-    private suspend fun getOrInitMcpClient(mcpClientType: McpClientType): McpClient {
-        return mapOfMcpClients.getOrPut(mcpClientType) {
-            val mcpClient = McpClientFactory.createMcpClient(mcpClientType)
+    private suspend fun getOrInitMcpClient(mcpClientConfig: McpClientConfig): McpClient {
+        return mapOfMcpClients.getOrPut(mcpClientConfig) {
+            val mcpClient = McpClientFactory.createMcpClient(mcpClientConfig)
             mcpClient.connect()
             mcpClient
         }

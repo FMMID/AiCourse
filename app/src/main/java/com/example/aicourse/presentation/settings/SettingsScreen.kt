@@ -21,8 +21,10 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.aicourse.BuildConfig
 import com.example.aicourse.R
-import com.example.aicourse.mcpclient.McpClientType
+import com.example.aicourse.di.AppInjector
+import com.example.aicourse.mcpclient.McpClientConfig
 import com.example.aicourse.presentation.settings.mcpTools.McpClientSection
 import com.example.aicourse.presentation.settings.mvi.SettingsIntent
 import com.example.aicourse.presentation.settings.mvi.SettingsUiState
@@ -96,11 +98,11 @@ fun SettingsScreenContent(
 
                 items(
                     items = settingsUiState.availableMcpClients,
-                    key = { it }
-                ) { mcpClientType ->
+                    key = { it.serverUrl }
+                ) { mcpClientConfig ->
                     McpClientSection(
-                        mcpClientType = mcpClientType,
-                        tools = settingsUiState.downloadedMcpClientTools[mcpClientType],
+                        mcpClientConfig = mcpClientConfig,
+                        tools = settingsUiState.downloadedMcpClientTools[mcpClientConfig],
                         onDownloadClick = { type ->
                             onIntent(SettingsIntent.DownloadMcpTools(type))
                         },
@@ -131,9 +133,9 @@ private fun SettingsScreenPreview() {
     AiCourseTheme {
         SettingsScreenContent(
             settingsUiState = SettingsUiState(
-                availableMcpClients = McpClientType.entries,
+                availableMcpClients = AppInjector.availableMcpConfigs,
                 downloadedMcpClientTools = mapOf(
-                    McpClientType.NOTE_SERVICE to listOf(
+                    McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL) to listOf(
                         Tool(
                             name = "get_weather",
                             title = "Get Weather",

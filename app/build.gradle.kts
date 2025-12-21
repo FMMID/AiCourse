@@ -16,6 +16,26 @@ android {
     namespace = "com.example.aicourse"
     compileSdk = 36
 
+    flavorDimensions += "environment"
+
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+
+            buildConfigField("String", "MCP_NOTE_URL", "\"http://192.168.0.177:8080/sse\"")
+            buildConfigField("String", "MCP_NOTIFICATION_URL", "\"http://192.168.0.177:8081/sse\"")
+            buildConfigField("String", "REGISTER_FMC_TOKEN_URL", "\"http://192.168.0.177:8080/register-push-token\"")
+        }
+
+        create("prod") {
+            dimension = "environment"
+
+            buildConfigField("String", "MCP_NOTE_URL", "\"https://95.81.96.66.sslip.io/notes/sse\"")
+            buildConfigField("String", "MCP_NOTIFICATION_URL", "\"https://95.81.96.66.sslip.io/notify/sse\"")
+            buildConfigField("String", "REGISTER_FMC_TOKEN_URL", "\"https://95.81.96.66.sslip.io/notes/register-push-token\"")
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.aicourse"
         minSdk = 24

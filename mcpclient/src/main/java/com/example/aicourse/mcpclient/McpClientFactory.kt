@@ -2,7 +2,7 @@ package com.example.aicourse.mcpclient
 
 object McpClientFactory {
 
-    fun createMcpClient(mcpClientType: McpClientType): McpClient {
-        return RemoteMcpClientService(mcpClientType)
+    fun createMcpClient(mcpClientConfig: McpClientConfig): McpClient {
+        return RemoteMcpClientService(mcpClientConfig)
     }
 }
