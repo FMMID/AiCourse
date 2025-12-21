@@ -28,7 +28,7 @@ object NotesSummarySchedulerService {
                         }
                     }
                 }
-                delay(360_000) // Раз в час
+                delay(3_600_000) // Раз в час
             }
         }
     }
