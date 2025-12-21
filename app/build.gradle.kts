@@ -22,9 +22,9 @@ android {
         create("dev") {
             dimension = "environment"
 
-            buildConfigField("String", "MCP_NOTE_URL", "\"http://10.0.2.2:8080/sse\"")
-            buildConfigField("String", "MCP_NOTIFICATION_URL", "\"http://10.0.2.2:8081/sse\"")
-            buildConfigField("String", "REGISTER_FMC_TOKEN_URL", "\"http://10.0.2.2:8080/register-push-token\"")
+            buildConfigField("String", "MCP_NOTE_URL", "\"http://192.168.0.177:8080/sse\"")
+            buildConfigField("String", "MCP_NOTIFICATION_URL", "\"http://192.168.0.177:8081/sse\"")
+            buildConfigField("String", "REGISTER_FMC_TOKEN_URL", "\"http://192.168.0.177:8080/register-push-token\"")
         }
 
         create("prod") {

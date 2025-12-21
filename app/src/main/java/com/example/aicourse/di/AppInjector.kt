@@ -16,6 +16,7 @@ import com.example.aicourse.data.settings.remote.McpRemoteDataSource
 import com.example.aicourse.data.settings.repository.McpRepositoryImp
 import com.example.aicourse.data.tools.context.ContextRepositoryImp
 import com.example.aicourse.domain.chat.model.ChatStateModel
+import com.example.aicourse.domain.chat.promt.adbManager.AdbManagerPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 import com.example.aicourse.domain.chat.strategy.ChatStrategy
 import com.example.aicourse.domain.chat.strategy.SimpleChatStrategy
@@ -40,6 +41,7 @@ object AppInjector {
         McpClientConfig(BuildConfig.MCP_NOTE_URL),
         McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL)
     )
+    val initActiveUserPrompt = AdbManagerPrompt()
 
     // TODO пока хардкодим
     val mcpClients = availableMcpConfigs.map { McpClientFactory.createMcpClient(it) }
