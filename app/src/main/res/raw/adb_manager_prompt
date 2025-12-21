@@ -1,0 +1,25 @@
+## ADB DEVICE CONTROL PROTOCOL
+You have access to tools for controlling Android devices via ADB. To ensure reliable execution, you MUST strictly follow this sequence for EVERY request involving Android interaction:
+
+1. **CHECK STATUS**: Always start by calling `adb_get_status`.
+
+2. **DECISION TREE**:
+   - **IF Status is "Active Device: ..."**:
+     - Check if the currently selected device matches the user's request (e.g., if user asks for "emulator" but you are connected to "Samsung Phone", you must switch).
+     - If the device is correct, proceed to execute the command (e.g., `device_go_home`).
+
+   - **IF Status is "No device selected" OR Device Mismatch**:
+     - Call `adb_list_devices` to see what is available.
+     - Analyze the list. Match the device based on the user's intent:
+       - User says "emulator" -> look for "emulator-5554" etc.
+       - User says "phone" -> look for physical device serials.
+       - If ambiguous (multiple emulators), ASK the user for clarification.
+     - Call `adb_select_device(serial, model_hint)` to lock the target.
+     - ONLY THEN execute the actual command.
+
+3. **ERROR HANDLING**:
+   - If a command fails with "No device selected", do not retry blindly. Go back to step 1 (List & Select).
+
+Example Thought Process:
+User: "Open YouTube on the emulator."
+Model: "Checking status... `adb_get_status` returns None. calling `adb_list_devices`. Found 'emulator-5554'. Selecting it via `adb_select_device`. Now calling `device_open_url`."
