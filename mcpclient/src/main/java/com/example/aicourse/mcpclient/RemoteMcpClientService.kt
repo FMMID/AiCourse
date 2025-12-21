@@ -44,7 +44,7 @@ private object Log {
     }
 }
 
-internal class RemoteMcpClientService(private val mcpClientType: McpClientType) : McpClient {
+internal class RemoteMcpClientService(private val mcpClientConfig: McpClientConfig) : McpClient {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val connectionMutex = Mutex()
     private var mcpClient: Client? = null
@@ -114,17 +114,17 @@ internal class RemoteMcpClientService(private val mcpClientType: McpClientType) 
             if (mcpClient != null) return
 
             try {
-                Log.d("RemoteMcpClient", "Creating new connection to ${mcpClientType.serverUrl}...")
+                Log.d("RemoteMcpClient", "Creating new connection to ${mcpClientConfig.serverUrl}...")
 
                 val transport = SseClientTransport(
                     client = httpClient,
-                    urlString = mcpClientType.serverUrl
+                    urlString = mcpClientConfig.serverUrl
                 )
 
                 val client = Client(
                     clientInfo = Implementation(
-                        name = mcpClientType.impName,
-                        version = mcpClientType.impVersion
+                        name = "AndroidAnimeClient",
+                        version = "1.0.0"
                     )
                 )
 
@@ -173,9 +173,11 @@ internal class RemoteMcpClientService(private val mcpClientType: McpClientType) 
                 put(key.toString(), value.toJsonElement())
             }
         }
+
         is List<*> -> buildJsonArray {
             this@toJsonElement.forEach { add(it.toJsonElement()) }
         }
+
         else -> JsonPrimitive(toString())
     }
 }

@@ -1,9 +1,8 @@
 package com.example.aicourse.data.notifications
 
 import android.util.Log
+import com.example.aicourse.BuildConfig
 import com.example.aicourse.data.notifications.model.RegistrationRequest
-import com.example.aicourse.mcpclient.LOCAL_FMC_TOKEN
-import com.example.aicourse.mcpclient.PROD_FMC_TOKEN
 import com.google.firebase.messaging.FirebaseMessaging
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -20,8 +19,6 @@ import kotlinx.serialization.json.Json
 
 //TODO отрефачить потом
 object PushTokenManager {
-    private const val SERVER_URL = PROD_FMC_TOKEN
-
     private val client = HttpClient {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
@@ -48,7 +45,7 @@ object PushTokenManager {
     private fun sendTokenToServer(userId: String, token: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = client.post(SERVER_URL) {
+                val response = client.post(BuildConfig.REGISTER_FMC_TOKEN_URL) {
                     contentType(ContentType.Application.Json)
                     setBody(RegistrationRequest(userId, token))
                 }

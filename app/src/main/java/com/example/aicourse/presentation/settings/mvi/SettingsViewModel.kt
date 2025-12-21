@@ -22,9 +22,9 @@ class SettingsViewModel(
         when (intent) {
             is SettingsIntent.SaveSettingsChatModel -> TODO("Реализовать сохранение новых настроек в settingsUseCase + обновить локальный ui state")
             is SettingsIntent.DownloadMcpTools -> viewModelScope.launch {
-                getLocalMcpToolsUseCase(intent.mcpClientType).onSuccess { tools ->
+                getLocalMcpToolsUseCase(intent.mcpClientConfig).onSuccess { tools ->
                     _uiState.update { state ->
-                        val typeAndTools = intent.mcpClientType to tools
+                        val typeAndTools = intent.mcpClientConfig to tools
                         val updatedDownloadedMcpClientTools = state.downloadedMcpClientTools + typeAndTools
                         state.copy(downloadedMcpClientTools = updatedDownloadedMcpClientTools)
                     }
