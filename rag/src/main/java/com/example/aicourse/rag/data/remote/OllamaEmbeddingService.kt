@@ -5,6 +5,7 @@ import com.example.aicourse.rag.domain.EmbeddingModel
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -18,7 +19,7 @@ import kotlinx.serialization.json.Json
 
 class OllamaEmbeddingService(
     private val baseUrl: String,
-    private val modelName: String = "nomic-embed-text"
+    private val modelName: String
 ) : EmbeddingModel {
 
     private val client = HttpClient(OkHttp) {
@@ -28,8 +29,13 @@ class OllamaEmbeddingService(
                 prettyPrint = true
             })
         }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 60_000
+            connectTimeoutMillis = 60_000
+            socketTimeoutMillis = 60_000
+        }
         install(Logging) {
-            level = LogLevel.BODY
+            level = LogLevel.HEADERS
             logger = object : Logger {
                 override fun log(message: String) {
                     Log.d("OllamaClient", message)

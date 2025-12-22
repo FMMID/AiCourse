@@ -18,8 +18,8 @@ class RagViewModel(application: Application) : AndroidViewModel(application) {
 
     private val pipeline = RagPipeline(
         embeddingModel = OllamaEmbeddingService(
-            baseUrl = "http://10.0.2.2:8888",
-            modelName = "nomic-embed-text"
+            baseUrl = "http://10.0.2.2:11434",
+            modelName = "nomic-embed-text:latest"
         ),
         vectorStore = JsonVectorStore(
             context = application,
