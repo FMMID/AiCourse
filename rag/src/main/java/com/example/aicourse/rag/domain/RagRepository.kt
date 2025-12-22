@@ -10,4 +10,6 @@ interface RagRepository {
     suspend fun loadIndex(name: String): List<DocumentChunk>
 
     suspend fun getIndexFile(name: String): File
+
+    suspend fun deleteIndex(indexName: String): Boolean
 }

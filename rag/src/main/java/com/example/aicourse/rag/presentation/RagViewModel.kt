@@ -96,6 +96,21 @@ class RagViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun deleteIndex(indexName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val success = ragRepository.deleteIndex(indexName)
+            if (success) {
+                if (_uiState.value.selectedIndexName == indexName) {
+                    onBackToList()
+                } else {
+                    loadIndicesList()
+                }
+            } else {
+                _uiState.value = _uiState.value.copy(error = "Не удалось удалить $indexName")
+            }
+        }
+    }
+
     private fun loadIndicesList() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(

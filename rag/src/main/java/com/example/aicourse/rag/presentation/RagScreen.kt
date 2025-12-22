@@ -85,7 +85,8 @@ fun RagScreen(
                 if (state.selectedIndexName == null) {
                     RagIndexList(
                         indices = state.availableIndices,
-                        onIndexClick = { viewModel.onIndexSelected(it) }
+                        onIndexClick = { viewModel.onIndexSelected(it) },
+                        onDeleteClick = { viewModel.deleteIndex(it) }
                     )
                 } else {
                     RagIndexDetail(

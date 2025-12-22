@@ -38,4 +38,13 @@ class RagRepositoryImp(context: Context) : RagRepository {
     override suspend fun getIndexFile(name: String): File {
         return File(indicesDir, "$name.json")
     }
+
+    override suspend fun deleteIndex(indexName: String): Boolean {
+        val file = File(indicesDir, "$indexName.json")
+        return if (file.exists()) {
+            file.delete()
+        } else {
+            false
+        }
+    }
 }
