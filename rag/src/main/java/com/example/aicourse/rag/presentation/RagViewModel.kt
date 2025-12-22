@@ -9,6 +9,7 @@ import com.example.aicourse.rag.data.local.JsonVectorStore
 import com.example.aicourse.rag.data.remote.OllamaEmbeddingService
 import com.example.aicourse.rag.domain.RagPipeline
 import com.example.aicourse.rag.domain.model.DocumentChunk
+import com.example.aicourse.rag.domain.textSplitter.RecursiveTextSplitter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,7 +51,8 @@ class RagViewModel(application: Application) : AndroidViewModel(application) {
 
             activePipeline = RagPipeline(
                 embeddingModel = embeddingService,
-                vectorStore = vectorStore
+                vectorStore = vectorStore,
+                textSplitter = RecursiveTextSplitter()
             )
 
             _uiState.value = _uiState.value.copy(
@@ -112,27 +114,26 @@ class RagViewModel(application: Application) : AndroidViewModel(application) {
     fun createNewIndex(indexName: String, fileUri: Uri) {
         viewModelScope.launch {
             hideCreateDialog()
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
-                // 1. Читаем файл
                 val content = readFileContent(fileUri)
                 val sourceName = getFileName(fileUri)
 
-                // 2. Создаем Store под конкретное имя файла
-                // Важно: JsonVectorStore должен уметь принимать полный путь или имя
-                val targetFile = ragRepository.getIndexFile(indexName)
-                val customStore = JsonVectorStore(getApplication(), "rag_indices/$indexName.json")
+                val relativePath = "rag_indices/$indexName.json"
+                val vectorStore = JsonVectorStore(getApplication(), relativePath)
 
-                val pipeline = RagPipeline(
+                val newPipeline = RagPipeline(
                     embeddingModel = embeddingService,
-                    vectorStore = customStore
+                    vectorStore = vectorStore,
+                    textSplitter = RecursiveTextSplitter()
                 )
 
-                // 3. Запускаем
-                val chunks = pipeline.ingestDocument(sourceName, content)
+                val chunks = newPipeline.ingestDocument(sourceName, content)
 
-                // 4. Переходим в этот индекс
+                activePipeline = newPipeline
+                cachedFullChunks = chunks
+
                 loadIndicesList()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
