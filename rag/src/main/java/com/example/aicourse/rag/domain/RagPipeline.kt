@@ -12,7 +12,7 @@ class RagPipeline(
 ) {
 
     // 1. Загрузка и Индексация
-    suspend fun ingestDocument(fileName: String, content: String) {
+    suspend fun ingestDocument(fileName: String, content: String): List<DocumentChunk> {
         // Шаг 1: Разбивка на чанки
         val rawChunks = textSplitter.split(content)
 
@@ -32,6 +32,8 @@ class RagPipeline(
         // Шаг 4: Сохранение в индекс
         vectorStore.addDocuments(docs)
         vectorStore.saveIndex()
+
+        return docs
     }
 
     // Поиск (для использования в чате)

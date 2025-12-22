@@ -6,9 +6,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.aicourse.mcpclient.UserSession
 import com.example.aicourse.data.notifications.PushTokenManager
-import com.example.aicourse.presentation.chat.ChatScreen
+import com.example.aicourse.mcpclient.UserSession
+import com.example.aicourse.rag.presentation.RagScreen
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
              * TODO Начальный экран при входе в приложение - ChatScreen
              */
             AiCourseTheme {
-                ChatScreen()
+                RagScreen()
             }
         }
     }
