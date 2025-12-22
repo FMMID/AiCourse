@@ -38,11 +38,14 @@ class JsonVectorStore(
     override suspend fun search(queryEmbedding: List<Float>, limit: Int): List<DocumentChunk> {
         return memoryIndex
             .map { doc ->
-                doc to cosineSimilarity(queryEmbedding, doc.embedding ?: emptyList())
+                val similarity = cosineSimilarity(queryEmbedding, doc.embedding ?: emptyList())
+                doc to similarity
             }
-            .sortedByDescending { it.second } // Сортируем по схожести (от 1.0 к -1.0)
+            .sortedByDescending { it.second } // Сортируем: от 1.0 (похож) к -1.0 (не похож)
             .take(limit)
-            .map { it.first }
+            .map { (doc, score) ->
+                doc.copy(score = score.toFloat())
+            }
     }
 
     // Математика сравнения векторов

@@ -1,6 +1,7 @@
 package com.example.aicourse.rag.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,75 +40,109 @@ fun ChunkProcessingCard(chunk: DocumentChunk) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
 
-            // Заголовок: Источник
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Description,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(4.dp))
+        val scoreColor = when {
+            chunk.score == null -> MaterialTheme.colorScheme.surfaceVariant
+            chunk.score > 0.8f -> Color(0xFF4CAF50)
+            chunk.score > 0.6f -> Color(0xFFFFC107)
+            else -> Color(0xFFEF5350)
+        }
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                // --- HEADER ---
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Левая часть: Имя файла
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Description,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = chunk.source,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    // Правая часть: SCORE (Показываем только если есть)
+                    if (chunk.score != null) {
+                        Surface(
+                            color = scoreColor.copy(alpha = 0.2f),
+                            contentColor = scoreColor.copy(alpha = 1f), // Делаем текст темнее фона
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "Score: %.4f".format(chunk.score),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // --- TEXT ---
                 Text(
-                    text = chunk.source,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    text = chunk.text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 6, // Чуть больше строк, чтобы видеть контекст
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(4.dp))
+                        .padding(8.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // --- VECTOR PREVIEW ---
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Code,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "VECTOR (${chunk.embedding?.size ?: 0}):",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                val vectorPreview = chunk.embedding?.take(5)?.joinToString(", ") {
+                    "%.3f".format(it)
+                } ?: "Waiting..."
+
+                Text(
+                    text = "[$vectorPreview, ...]",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    color = Color(0xFF2E7D32),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFE8F5E9), RoundedCornerShape(4.dp))
+                        .padding(8.dp)
                 )
             }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            // 1. Текстовый чанк
-            Text(
-                text = "TEXT CHUNK:",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = chunk.text,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(4.dp))
-                    .padding(8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 2. Векторное представление (Превью)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Code,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "VECTOR REPRESENTATION (size: ${chunk.embedding?.size ?: 0}):",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            // Показываем первые 5 значений вектора, чтобы было похоже на "матрицу"
-            val vectorPreview = chunk.embedding?.take(5)?.joinToString(", ") {
-                "%.4f".format(it)
-            } ?: "Waiting for embeddings..."
-
-            Text(
-                text = "[$vectorPreview, ...]",
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
-                color = Color(0xFF2E7D32), // Зеленый цвет "как в терминале"
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFE8F5E9), RoundedCornerShape(4.dp))
-                    .padding(8.dp)
-            )
         }
     }
 }
@@ -125,5 +161,21 @@ private fun ChunkCardPreview() {
                 )
             )
         }
+    }
+}
+
+@Preview
+@Composable
+fun ChunkWithScorePreview() {
+    MaterialTheme {
+        ChunkProcessingCard(
+            chunk = DocumentChunk(
+                id = "1",
+                text = "Пример текста, который очень релевантен запросу пользователя.",
+                source = "data.txt",
+                embedding = listOf(0.1f, 0.2f),
+                score = 0.8942f // Симулируем высокий скор
+            )
+        )
     }
 }
