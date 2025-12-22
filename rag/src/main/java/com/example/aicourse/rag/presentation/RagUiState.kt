@@ -3,7 +3,10 @@ package com.example.aicourse.rag.presentation
 import com.example.aicourse.rag.domain.model.DocumentChunk
 
 data class RagUiState(
-    val isLoading: Boolean = false,
+    val availableIndices: List<String> = emptyList(),
+    val selectedIndexName: String? = null,
     val processedChunks: List<DocumentChunk> = emptyList(),
-    val error: String? = null
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val showCreateDialog: Boolean = false // Показывать ли диалог создания
 )
