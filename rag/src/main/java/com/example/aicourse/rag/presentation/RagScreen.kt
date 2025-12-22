@@ -91,7 +91,8 @@ fun RagScreen(
                 } else {
                     RagIndexDetail(
                         chunks = state.processedChunks,
-                        error = state.error
+                        error = state.error,
+                        onSearch = { query -> viewModel.onSearchQuery(query) }
                     )
                 }
             }
