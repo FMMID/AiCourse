@@ -110,6 +110,9 @@ dependencies {
     //MCP client
     implementation(project(":mcpclient"))
 
+    //RAG module
+    implementation(project(":rag"))
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
