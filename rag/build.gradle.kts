@@ -31,5 +31,13 @@ android {
 }
 
 dependencies {
+    //Serialization
     implementation(libs.kotlinx.serialization.json)
+
+    // Client Network
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp) // Или android/cio
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.client.logging)
 }

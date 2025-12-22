@@ -1,8 +1,8 @@
-package com.example.aicourse.rag.data
+package com.example.aicourse.rag.data.local
 
 import android.content.Context
-import com.example.aicourse.rag.domain.model.DocumentChunk
 import com.example.aicourse.rag.domain.VectorStore
+import com.example.aicourse.rag.domain.model.DocumentChunk
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
