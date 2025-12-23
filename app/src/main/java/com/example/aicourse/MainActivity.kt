@@ -19,6 +19,7 @@ import com.example.aicourse.presentation.chat.ChatScreen
 import com.example.aicourse.presentation.chat.mvi.ChatViewModel
 import com.example.aicourse.presentation.settings.SettingsScreen
 import com.example.aicourse.rag.presentation.RagScreen
+import com.example.aicourse.rag.presentation.RagViewModel
 import com.example.aicourse.ui.theme.AiCourseTheme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -52,7 +53,10 @@ fun AiCourseNavHost() {
     ) {
         // Экран списка RAG
         composable<Screen.RagList> {
+            val viewModel: RagViewModel = koinViewModel()
+
             RagScreen(
+                viewModel = viewModel,
                 onIndexSelected = { indexId ->
                     navController.navigate(Screen.Chat(chatId = MAIN_CHAT_ID, ragIndexId = indexId))
                 }

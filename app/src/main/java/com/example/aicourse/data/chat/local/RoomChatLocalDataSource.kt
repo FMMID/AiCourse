@@ -107,7 +107,8 @@ class RoomChatLocalDataSource(
             chatMessages = mutableListOf(),
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
-            activeSystemPrompt = initActiveUserPrompt
+            activeSystemPrompt = initActiveUserPrompt,
+            ragIndexId = null
         )
     }
 }

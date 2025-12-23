@@ -7,11 +7,9 @@ import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.model.SendMessageResult
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.promt.dynamicModel.DynamicModelPrompt
-import com.example.aicourse.domain.chat.promt.dynamicSystemPrompt.DynamicSystemPrompt
 import com.example.aicourse.domain.chat.promt.dynamicTemperature.DynamicTemperaturePrompt
-import com.example.aicourse.domain.chat.promt.json.JsonOutputPrompt
-import com.example.aicourse.domain.chat.promt.pc.BuildComputerAssistantPrompt
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
+import com.example.aicourse.domain.chat.promt.ragAssistant.RagAssistantPrompt
 import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
 import com.example.aicourse.domain.settings.model.HistoryStrategy
@@ -24,13 +22,15 @@ import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.domain.tools.context.model.ContextWindow
 import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
 import com.example.aicourse.domain.tools.tokenComparePrevious.TokenCompareManager
+import com.example.aicourse.rag.domain.RagPipeline
 import java.util.UUID
 
 class SimpleChatStrategy(
     initChatStateModel: ChatStateModel,
     private val applicationContext: Context,
     private val contextRepository: ContextRepository,
-    private val initialSystemPrompt: SystemPrompt<*>
+    private val initialSystemPrompt: SystemPrompt<*>,
+    private val ragPipelineFactory: (String) -> RagPipeline
 ) : ChatStrategy {
 
     override var chatStateModel: ChatStateModel = initChatStateModel
@@ -141,7 +141,8 @@ class SimpleChatStrategy(
             chatMessages = mutableListOf(),
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
-            activeSystemPrompt = initialSystemPrompt
+            activeSystemPrompt = initialSystemPrompt,
+            ragIndexId = chatStateModel.ragIndexId
         )
     }
 
@@ -169,17 +170,28 @@ class SimpleChatStrategy(
      * @param currentPrompt активный промпт в рамках текущего чата
      * @return подходящий SystemPrompt или null если триггеров не найдено
      */
-    private fun extractSystemPromptFromContent(
+    private suspend fun extractSystemPromptFromContent(
         content: String,
         currentPrompt: SystemPrompt<*>,
     ): SystemPrompt<*>? {
         val availablePrompts = listOf(
-            JsonOutputPrompt(),
-            BuildComputerAssistantPrompt(),
-            currentPrompt as? DynamicSystemPrompt ?: DynamicSystemPrompt(),
-            currentPrompt as? DynamicTemperaturePrompt ?: DynamicTemperaturePrompt(),
-            currentPrompt as? DynamicModelPrompt ?: DynamicModelPrompt(),
+            currentPrompt as? RagAssistantPrompt ?: RagAssistantPrompt(),
+//            JsonOutputPrompt(),
+//            BuildComputerAssistantPrompt(),
+//            currentPrompt as? DynamicSystemPrompt ?: DynamicSystemPrompt(),
+//            currentPrompt as? DynamicTemperaturePrompt ?: DynamicTemperaturePrompt(),
+//            currentPrompt as? DynamicModelPrompt ?: DynamicModelPrompt(),
         )
+
+        val matchedPrompt = availablePrompts.firstOrNull { prompt ->
+            prompt.matches(content)
+        }
+
+        if (matchedPrompt is RagAssistantPrompt && !chatStateModel.ragIndexId.isNullOrBlank()) {
+            val ragPipeline = ragPipelineFactory(chatStateModel.ragIndexId!!)
+            val ragDocuments = ragPipeline.retrieve(content)
+            matchedPrompt.ragDocumentChunks = ragDocuments
+        }
 
         return availablePrompts.firstOrNull { prompt ->
             prompt.matches(content)

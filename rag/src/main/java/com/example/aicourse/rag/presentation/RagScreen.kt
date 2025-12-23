@@ -22,12 +22,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RagScreen(
-    viewModel: RagViewModel = viewModel(),
+    viewModel: RagViewModel,
     onIndexSelected: (String) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()

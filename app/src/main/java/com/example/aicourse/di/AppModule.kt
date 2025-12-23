@@ -1,7 +1,6 @@
 package com.example.aicourse.di
 
 import android.app.Application
-import com.example.aicourse.BuildConfig
 import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.local.ChatLocalDataSource.Companion.MAIN_CHAT_ID
 import com.example.aicourse.data.chat.local.RoomChatLocalDataSource
@@ -25,12 +24,16 @@ import com.example.aicourse.domain.chat.usecase.GetHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.SendMessageChatUseCase
 import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.repository.McpRepository
+import com.example.aicourse.domain.settings.usecase.GetLocalMcpToolsUseCase
+import com.example.aicourse.domain.settings.usecase.SettingsChatUseCase
 import com.example.aicourse.domain.tools.context.ContextRepository
 import com.example.aicourse.mcpclient.McpClientConfig
 import com.example.aicourse.mcpclient.McpClientFactory
 import com.example.aicourse.mcpclient.UserSession
 import com.example.aicourse.presentation.chat.mvi.ChatViewModel
 import com.example.aicourse.presentation.settings.mvi.SettingsViewModel
+import com.example.aicourse.rag.domain.RagPipeline
+import com.example.aicourse.rag.domain.RagRepository
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -39,9 +42,9 @@ import org.koin.dsl.module
 
 
 private val initActiveUserPrompt = AdbManagerPrompt()
-private val mcpConfigs = listOf(
-    McpClientConfig(BuildConfig.MCP_NOTE_URL),
-    McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL)
+private val mcpConfigs = listOf<McpClientConfig>(
+//    McpClientConfig(BuildConfig.MCP_NOTE_URL),
+//    McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL)
 )
 private val mcpClients = mcpConfigs.map { McpClientFactory.createMcpClient(it) }
 
@@ -52,15 +55,15 @@ val appModule = module {
     factory<ChatStateMapper> { ChatStateMapper() }
     single<ChatLocalDataSource> {
         RoomChatLocalDataSource(
-            chatDao = get(),
-            mapper = get(),
+            chatDao = get<ChatDao>(),
+            mapper = get<ChatStateMapper>(),
             initActiveUserPrompt = initActiveUserPrompt
         )
     }
 
     // MCP
     single<McpRemoteDataSource> { McpRemoteDataSource() }
-    single<McpRepository> { McpRepositoryImp(mcpRemoteDataSource = get()) }
+    single<McpRepository> { McpRepositoryImp(mcpRemoteDataSource = get<McpRemoteDataSource>()) }
 
 
     // --- Remote Data Sources Factory ---
@@ -98,28 +101,31 @@ val appModule = module {
     // --- Strategies ---
     single<ChatStrategy> {
         SimpleChatStrategy(
-            initChatStateModel = get(),
+            initChatStateModel = get<ChatStateModel>(),
             applicationContext = androidContext(),
-            contextRepository = get(),
-            initialSystemPrompt = initActiveUserPrompt
+            contextRepository = get<ContextRepository>(),
+            initialSystemPrompt = initActiveUserPrompt,
+            ragPipelineFactory = { indexId ->
+                get<RagPipeline> { parametersOf(indexId) }
+            }
         )
     }
 
     // --- Use Cases ---
     // UseCases обычно легкие и не хранят состояние, поэтому factory
-    factory { SendMessageChatUseCase(chatRepository = get(), chatStrategy = get()) }
+    factory { SendMessageChatUseCase(chatRepository = get<ChatRepository>(), chatStrategy = get<ChatStrategy>()) }
 
-    factory { ClearHistoryChatUseCase(chatRepository = get(), chatStrategy = get()) }
+    factory { ClearHistoryChatUseCase(chatRepository = get<ChatRepository>(), chatStrategy = get<ChatStrategy>()) }
 
-    factory { GetHistoryChatUseCase(chatRepository = get()) }
+    factory { GetHistoryChatUseCase(chatRepository = get<ChatRepository>()) }
 
     // --- ViewModels ---
     // SettingsViewModel
     viewModel {
         SettingsViewModel(
             application = androidContext() as Application,
-            settingsChatUseCase = get(),
-            getLocalMcpToolsUseCase = get()
+            settingsChatUseCase = get<SettingsChatUseCase>(),
+            getLocalMcpToolsUseCase = get<GetLocalMcpToolsUseCase>()
         )
     }
 
@@ -130,10 +136,10 @@ val appModule = module {
             application = androidContext() as Application,
             chatId = chatId,
             ragIndexId = ragIndexId,
-            ragRepository = get(),
-            sendMessageChatUseCase = get(),
-            clearHistoryChatUseCase = get(),
-            getHistoryChatUseCase = get()
+            ragRepository = get<RagRepository>(),
+            sendMessageChatUseCase = get<SendMessageChatUseCase>(),
+            clearHistoryChatUseCase = get<ClearHistoryChatUseCase>(),
+            getHistoryChatUseCase = get<GetHistoryChatUseCase>()
         )
     }
 }

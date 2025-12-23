@@ -54,5 +54,8 @@ data class ChatEntity(
      * Время последнего обновления (Unix timestamp в миллисекундах)
      */
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+
+    @ColumnInfo(name = "rag_index_id")
+    val ragIndexId: String?
 )

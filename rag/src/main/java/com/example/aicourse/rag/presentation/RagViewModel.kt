@@ -4,10 +4,10 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.aicourse.rag.data.RagRepositoryImp
 import com.example.aicourse.rag.data.local.JsonVectorStore
-import com.example.aicourse.rag.data.remote.OllamaEmbeddingService
+import com.example.aicourse.rag.domain.EmbeddingModel
 import com.example.aicourse.rag.domain.RagPipeline
+import com.example.aicourse.rag.domain.RagRepository
 import com.example.aicourse.rag.domain.model.DocumentChunk
 import com.example.aicourse.rag.domain.textSplitter.RecursiveTextSplitter
 import kotlinx.coroutines.Dispatchers
@@ -16,13 +16,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class RagViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val ragRepository = RagRepositoryImp(application)
-    private val embeddingService = OllamaEmbeddingService(
-        baseUrl = "http://10.0.2.2:11434",
-        modelName = "nomic-embed-text:latest"
-    )
+class RagViewModel(
+    application: Application,
+    private val ragRepository: RagRepository,
+    private val embeddingService: EmbeddingModel
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(RagUiState())
     val uiState = _uiState.asStateFlow()
