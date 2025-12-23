@@ -30,7 +30,7 @@ class SimpleChatStrategy(
     private val applicationContext: Context,
     private val contextRepository: ContextRepository,
     private val initialSystemPrompt: SystemPrompt<*>,
-    private val ragPipelineFactory: (String) -> RagPipeline
+    private val ragPipeline: RagPipeline
 ) : ChatStrategy {
 
     override var chatStateModel: ChatStateModel = initChatStateModel
@@ -176,11 +176,6 @@ class SimpleChatStrategy(
     ): SystemPrompt<*>? {
         val availablePrompts = listOf(
             currentPrompt as? RagAssistantPrompt ?: RagAssistantPrompt(),
-//            JsonOutputPrompt(),
-//            BuildComputerAssistantPrompt(),
-//            currentPrompt as? DynamicSystemPrompt ?: DynamicSystemPrompt(),
-//            currentPrompt as? DynamicTemperaturePrompt ?: DynamicTemperaturePrompt(),
-//            currentPrompt as? DynamicModelPrompt ?: DynamicModelPrompt(),
         )
 
         val matchedPrompt = availablePrompts.firstOrNull { prompt ->
@@ -188,7 +183,6 @@ class SimpleChatStrategy(
         }
 
         if (matchedPrompt is RagAssistantPrompt && !chatStateModel.ragIndexId.isNullOrBlank()) {
-            val ragPipeline = ragPipelineFactory(chatStateModel.ragIndexId!!)
             val ragDocuments = ragPipeline.retrieve(content)
             matchedPrompt.ragDocumentChunks = ragDocuments
         }

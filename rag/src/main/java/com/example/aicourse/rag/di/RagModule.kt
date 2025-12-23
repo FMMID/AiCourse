@@ -26,11 +26,11 @@ val ragModule = module {
     }
     single<TextSplitter> { RecursiveTextSplitter() }
 
-    factory<VectorStore> { (ragFileName: String) ->
-        JsonVectorStore(context = androidContext(), fileName = ragFileName)
+    factory<VectorStore> { (ragFileName: String?) ->
+        JsonVectorStore(context = androidContext(), fileName = ragFileName ?: "rag_index.json")
     }
 
-    factory<RagPipeline> { (indexId: String) ->
+    factory<RagPipeline> { (indexId: String?) ->
         RagPipeline(
             embeddingModel = get<EmbeddingModel>(),
             vectorStore = get<VectorStore> { parametersOf(indexId) },

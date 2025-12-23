@@ -36,6 +36,7 @@ class JsonVectorStore(
     }
 
     override suspend fun search(queryEmbedding: List<Float>, limit: Int): List<DocumentChunk> {
+        if (memoryIndex.isEmpty()) loadIndex()
         return memoryIndex
             .map { doc ->
                 val similarity = cosineSimilarity(queryEmbedding, doc.embedding ?: emptyList())

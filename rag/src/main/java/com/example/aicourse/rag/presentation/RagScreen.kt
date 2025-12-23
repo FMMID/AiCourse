@@ -68,7 +68,7 @@ fun RagScreen(
             if (state.chatTargetId != null) {
                 ExtendedFloatingActionButton(
                     onClick = {
-                        onIndexSelected(state.chatTargetId!!)
+                        onIndexSelected("rag_indices/${state.chatTargetId!!}.json")
                         viewModel.clearChatSelection()
                     },
                     containerColor = MaterialTheme.colorScheme.primary,

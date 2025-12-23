@@ -15,7 +15,7 @@ import com.example.aicourse.data.settings.remote.McpRemoteDataSource
 import com.example.aicourse.data.settings.repository.McpRepositoryImp
 import com.example.aicourse.data.tools.context.ContextRepositoryImp
 import com.example.aicourse.domain.chat.model.ChatStateModel
-import com.example.aicourse.domain.chat.promt.adbManager.AdbManagerPrompt
+import com.example.aicourse.domain.chat.promt.ragAssistant.RagAssistantPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 import com.example.aicourse.domain.chat.strategy.ChatStrategy
 import com.example.aicourse.domain.chat.strategy.SimpleChatStrategy
@@ -33,7 +33,6 @@ import com.example.aicourse.mcpclient.UserSession
 import com.example.aicourse.presentation.chat.mvi.ChatViewModel
 import com.example.aicourse.presentation.settings.mvi.SettingsViewModel
 import com.example.aicourse.rag.domain.RagPipeline
-import com.example.aicourse.rag.domain.RagRepository
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -41,7 +40,7 @@ import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
 
 
-private val initActiveUserPrompt = AdbManagerPrompt()
+private val initActiveUserPrompt = RagAssistantPrompt()
 private val mcpConfigs = listOf<McpClientConfig>(
 //    McpClientConfig(BuildConfig.MCP_NOTE_URL),
 //    McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL)
@@ -81,7 +80,12 @@ val appModule = module {
         }
     }
 
-    single<ChatStateModel> { runBlocking { get<ChatLocalDataSource>().getChatState(MAIN_CHAT_ID) } }
+    single<ChatStateModel> { (ragIndexId: String?) ->
+        runBlocking {
+            val cachedState = get<ChatLocalDataSource>().getChatState(MAIN_CHAT_ID)
+            ragIndexId?.let { cachedState.copy(ragIndexId = it) } ?: cachedState
+        }
+    }
 
     // ContextRepository (всегда использует HuggingFace, как в AppInjector)
     single<ContextRepository> {
@@ -90,34 +94,42 @@ val appModule = module {
     }
 
     // ChatRepository
-    single<ChatRepository> {
-        val stateModel = get<ChatStateModel>()
+    single<ChatRepository> { (ragIndexId: String?) ->
+        val stateModel = get<ChatStateModel>() { parametersOf(ragIndexId) }
         val apiImpl = stateModel.settingsChatModel.currentUseApiImplementation
         val remoteDataSource = get<BaseChatRemoteDataSource> { parametersOf(apiImpl) }
 
-        ChatRepositoryImpl(androidContext(), remoteDataSource, get())
+        ChatRepositoryImpl(context = androidContext(), remoteDataSource = remoteDataSource, localDataSource = get<ChatLocalDataSource>())
     }
 
     // --- Strategies ---
-    single<ChatStrategy> {
+    single<ChatStrategy> { (ragIndexId: String?) ->
         SimpleChatStrategy(
-            initChatStateModel = get<ChatStateModel>(),
+            initChatStateModel = get<ChatStateModel>() { parametersOf(ragIndexId) },
             applicationContext = androidContext(),
             contextRepository = get<ContextRepository>(),
             initialSystemPrompt = initActiveUserPrompt,
-            ragPipelineFactory = { indexId ->
-                get<RagPipeline> { parametersOf(indexId) }
-            }
+            ragPipeline = get<RagPipeline> { parametersOf(ragIndexId) }
         )
     }
 
     // --- Use Cases ---
     // UseCases обычно легкие и не хранят состояние, поэтому factory
-    factory { SendMessageChatUseCase(chatRepository = get<ChatRepository>(), chatStrategy = get<ChatStrategy>()) }
+    factory<SendMessageChatUseCase> { (ragIndexId: String?) ->
+        SendMessageChatUseCase(
+            chatRepository = get<ChatRepository>() { parametersOf(ragIndexId) },
+            chatStrategy = get<ChatStrategy>() { parametersOf(ragIndexId) }
+        )
+    }
 
-    factory { ClearHistoryChatUseCase(chatRepository = get<ChatRepository>(), chatStrategy = get<ChatStrategy>()) }
+    factory<ClearHistoryChatUseCase> { (ragIndexId: String?) ->
+        ClearHistoryChatUseCase(
+            chatRepository = get<ChatRepository>() { parametersOf(ragIndexId) },
+            chatStrategy = get<ChatStrategy>() { parametersOf(ragIndexId) }
+        )
+    }
 
-    factory { GetHistoryChatUseCase(chatRepository = get<ChatRepository>()) }
+    factory<GetHistoryChatUseCase> { GetHistoryChatUseCase(chatRepository = get<ChatRepository>()) }
 
     // --- ViewModels ---
     // SettingsViewModel
@@ -135,10 +147,8 @@ val appModule = module {
         ChatViewModel(
             application = androidContext() as Application,
             chatId = chatId,
-            ragIndexId = ragIndexId,
-            ragRepository = get<RagRepository>(),
-            sendMessageChatUseCase = get<SendMessageChatUseCase>(),
-            clearHistoryChatUseCase = get<ClearHistoryChatUseCase>(),
+            sendMessageChatUseCase = get<SendMessageChatUseCase>() { parametersOf(ragIndexId) },
+            clearHistoryChatUseCase = get<ClearHistoryChatUseCase>() { parametersOf(ragIndexId) },
             getHistoryChatUseCase = get<GetHistoryChatUseCase>()
         )
     }

@@ -40,12 +40,7 @@ class RoomChatLocalDataSource(
      * @return ChatStateModel - всегда возвращаем непустой объект
      */
     override suspend fun getChatState(id: String): ChatStateModel = withContext(Dispatchers.IO) {
-        val data = chatDao.loadChatState(id)
-
-        // Если чата нет в БД - создаём дефолтное состояние (как в InMemoryDataSource)
-        if (data == null) {
-            return@withContext createDefaultChatState(id)
-        }
+        val data = chatDao.loadChatState(id) ?: return@withContext createDefaultChatState(id)
 
         // Конвертируем entities → domain модель
         mapper.toDomainModel(data)

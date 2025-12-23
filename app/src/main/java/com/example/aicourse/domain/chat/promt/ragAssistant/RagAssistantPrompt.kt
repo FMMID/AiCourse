@@ -21,7 +21,7 @@ class RagAssistantPrompt(
         return baseSystemPrompt + chunksText
     }
 
-    override fun matches(message: String): Boolean = false
+    override fun matches(message: String): Boolean = true
 
     override fun parseResponse(rawResponse: String): PlainTextResponse {
         return PlainTextResponse(rawContent = rawResponse)
