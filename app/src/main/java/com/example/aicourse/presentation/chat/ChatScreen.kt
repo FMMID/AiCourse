@@ -40,18 +40,41 @@ import com.example.aicourse.presentation.chat.mvi.ChatViewModel
 import com.example.aicourse.presentation.uiKit.MessageInputField
 import com.example.aicourse.ui.theme.AiCourseTheme
 
-
-@OptIn(ExperimentalMaterial3Api::class)
+// --- 1. STATEFUL COMPOSABLE (Для использования в навигации) ---
 @Composable
 fun ChatScreen(
     navController: NavController,
-    ragIndexId: String,
+    ragIndexId: String?,
     viewModel: ChatViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Передаем состояние и события в Stateless компонент
+    ChatScreenContent(
+        uiState = uiState,
+        ragIndexId = ragIndexId,
+        onBackClick = { navController.popBackStack() },
+        onToggleRag = { viewModel.handleIntent(ChatIntent.ToggleRagMode) },
+        onClearClick = { viewModel.handleIntent(ChatIntent.ClearHistory) },
+        onSendMessage = { text -> viewModel.handleIntent(ChatIntent.SendMessage(text)) }
+    )
+}
+
+// --- 2. STATELESS COMPOSABLE (Чистый UI, который можно тестить и превьюить) ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatScreenContent(
+    uiState: ChatUiState,
+    ragIndexId: String?,
+    onBackClick: () -> Unit,
+    onToggleRag: () -> Unit,
+    onClearClick: () -> Unit,
+    onSendMessage: (String) -> Unit
+) {
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
+    // Авто-скролл вниз при добавлении сообщений
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.messages.size - 1)
@@ -63,27 +86,9 @@ fun ChatScreen(
             ChatTopBar(
                 state = uiState,
                 ragIndexId = ragIndexId,
-                onBackClick = { navController.popBackStack() },
-                onToggleRag = { viewModel.handleIntent(ChatIntent.ToggleRagMode) },
-                onClearClick = { viewModel.handleIntent(ChatIntent.ClearHistory) }
-            )
-            TopAppBar(
-                title = { Text(stringResource(R.string.chat_title)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.handleIntent(ChatIntent.ClearHistory) }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.clear_history_description),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
+                onBackClick = onBackClick,
+                onToggleRag = onToggleRag,
+                onClearClick = onClearClick
             )
         },
         bottomBar = {
@@ -91,7 +96,7 @@ fun ChatScreen(
                 value = messageText,
                 onValueChange = { messageText = it },
                 onSendClick = {
-                    viewModel.handleIntent(ChatIntent.SendMessage(messageText))
+                    onSendMessage(messageText)
                     messageText = ""
                 },
                 enabled = !uiState.isLoading
@@ -105,6 +110,7 @@ fun ChatScreen(
                 .padding(top = dimensionResource(R.dimen.screen_padding_top))
         ) {
             if (uiState.activePrompt !is PlainTextPrompt) {
+                // Если activePrompt может быть null, добавь проверку uiState.activePrompt != null
                 ActivePromptIndicator(
                     activePrompt = uiState.activePrompt,
                     tokenUsage = uiState.messages.lastOrNull()?.tokenUsage,
@@ -141,11 +147,12 @@ fun ChatScreen(
     }
 }
 
+// --- 3. COMPONENTS ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatTopBar(
     state: ChatUiState,
-    ragIndexId: String,
+    ragIndexId: String?,
     onBackClick: () -> Unit,
     onToggleRag: () -> Unit,
     onClearClick: () -> Unit
@@ -154,7 +161,7 @@ fun ChatTopBar(
         title = {
             Column {
                 Text(stringResource(R.string.chat_title))
-                if (state.isRagModeEnabled && ragIndexId.isNotEmpty()) {
+                if (state.isRagModeEnabled && ragIndexId?.isNotEmpty() == true) {
                     Text(
                         text = "RAG: $ragIndexId",
                         style = MaterialTheme.typography.labelSmall,
@@ -195,14 +202,14 @@ fun ChatTopBar(
                         tint = tint
                     )
                 }
-            } else {
-                IconButton(onClick = { onClearClick() }) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.clear_history_description),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+            }
+
+            IconButton(onClick = { onClearClick() }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.clear_history_description),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -212,14 +219,27 @@ fun ChatTopBar(
     )
 }
 
+// --- 4. PREVIEW ---
 @Preview(showBackground = true)
 @Composable
 fun ChatScreenPreview() {
     AiCourseTheme {
-        ChatScreen(
-            navController = TODO(),
-            ragIndexId = TODO(),
-            viewModel = TODO()
+        val mockState = ChatUiState(
+            messages = emptyList(),
+            isLoading = false,
+            isRagModeEnabled = true,
+            showRagButton = true,
+            error = null,
+            activePrompt = PlainTextPrompt()
+        )
+
+        ChatScreenContent(
+            uiState = mockState,
+            ragIndexId = "course_index_v1",
+            onBackClick = {},
+            onToggleRag = {},
+            onClearClick = {},
+            onSendMessage = {}
         )
     }
 }

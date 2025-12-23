@@ -73,7 +73,9 @@ fun AiCourseNavHost() {
             }
 
             ChatScreen(
-                viewModel = viewModel
+                viewModel = viewModel,
+                navController = navController,
+                ragIndexId = route.ragIndexId,
             )
         }
 
