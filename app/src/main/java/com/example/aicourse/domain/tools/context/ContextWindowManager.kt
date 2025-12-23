@@ -1,6 +1,6 @@
 package com.example.aicourse.domain.tools.context
 
-import android.app.Application
+import android.content.Context
 import android.util.Log
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
@@ -17,7 +17,7 @@ import com.example.aicourse.domain.utils.ResourceReader
 class ContextWindowManager(
     private val targetContextWindow: ContextWindow,
     private val contextRepository: ContextRepository,
-    private val applicationContext: Application
+    private val applicationContext: Context
 ) : Tool<Message> {
 
     private var contextInfo: ContextInfo = ContextInfo(sizeOfSummaryMessages = 0, sizeOfActiveMessages = 0, sizeOfSystemPrompt = 0)

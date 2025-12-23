@@ -165,6 +165,20 @@ class RagViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun onIndexLongClicked(indexName: String) {
+        // Если уже выбран этот же элемент - снимаем выделение, иначе выделяем новый
+        val currentTarget = _uiState.value.chatTargetId
+        if (currentTarget == indexName) {
+            clearChatSelection()
+        } else {
+            _uiState.value = _uiState.value.copy(chatTargetId = indexName)
+        }
+    }
+
+    fun clearChatSelection() {
+        _uiState.value = _uiState.value.copy(chatTargetId = null)
+    }
+
     private fun loadIndicesList() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(

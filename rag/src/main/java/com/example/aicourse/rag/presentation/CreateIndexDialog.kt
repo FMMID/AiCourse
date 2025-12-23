@@ -1,5 +1,8 @@
 package com.example.aicourse.rag.presentation
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
@@ -15,9 +18,13 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun CreateIndexDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String, Uri) -> Unit
 ) {
     var indexName by remember { mutableStateOf("") }
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri -> uri?.let { onConfirm(indexName, uri) } }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Новое хранилище") },
@@ -38,7 +45,7 @@ fun CreateIndexDialog(
             Button(
                 onClick = {
                     if (indexName.isNotBlank()) {
-                        onConfirm(indexName)
+                        filePickerLauncher.launch("text/*")
                     }
                 },
                 enabled = indexName.isNotBlank()
@@ -59,6 +66,6 @@ fun CreateIndexDialog(
 private fun CreateIndexDialogPreview() {
     CreateIndexDialog(
         onDismiss = {},
-        onConfirm = {}
+        onConfirm = { _, _ -> }
     )
 }

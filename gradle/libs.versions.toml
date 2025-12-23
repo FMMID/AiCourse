@@ -13,6 +13,7 @@ lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.0"
 composeBom = "2025.11.01"
 navigationCompose = "2.8.5"
+koin = "4.0.0"
 
 ktor = "3.0.2"
 kotlinxSerialization = "1.7.3"
@@ -60,6 +61,10 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 # MCP
 mcp-kotlin-sdk = { group = "io.modelcontextprotocol", name = "kotlin-sdk", version.ref = "kotlin-sdk" }
 mcp-logging = { group = "org.slf4j", name = "slf4j-nop", version.ref = "logging" }
+
+# Koin
+koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
+koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }
 
 
 #Notificarion

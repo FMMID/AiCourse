@@ -2,8 +2,6 @@ package com.example.aicourse.presentation.chat.mvi
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
-import com.example.aicourse.data.chat.local.ChatLocalDataSource.Companion.MAIN_CHAT_ID
-import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
@@ -11,16 +9,19 @@ import com.example.aicourse.domain.chat.usecase.ClearHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.GetHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.SendMessageChatUseCase
 import com.example.aicourse.presentation.base.BaseViewModel
+import com.example.aicourse.rag.domain.RagRepository
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 class ChatViewModel(
     application: Application,
-    private val chatId: String = MAIN_CHAT_ID,
-    private val sendMessageChatUseCase: SendMessageChatUseCase = AppInjector.createSendMessageChatUseCase(application),
-    private val clearHistoryChatUseCase: ClearHistoryChatUseCase = AppInjector.createClearHistoryChatUseCase(application),
-    private val getHistoryChatUseCase: GetHistoryChatUseCase = AppInjector.createGetHistoryChatUseCase(application)
+    private val chatId: String,
+    private val ragIndexId: String?,
+    private val ragRepository: RagRepository,
+    private val sendMessageChatUseCase: SendMessageChatUseCase,
+    private val clearHistoryChatUseCase: ClearHistoryChatUseCase,
+    private val getHistoryChatUseCase: GetHistoryChatUseCase
 ) : BaseViewModel<ChatUiState, ChatIntent>(application, ChatUiState()) {
 
     init {

@@ -1,6 +1,5 @@
 package com.example.aicourse.presentation.chat
 
-import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,28 +23,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 import com.example.aicourse.presentation.chat.message.MessagesList
 import com.example.aicourse.presentation.chat.mvi.ChatIntent
 import com.example.aicourse.presentation.chat.mvi.ChatViewModel
-import com.example.aicourse.presentation.chat.mvi.ChatViewModelFactory
 import com.example.aicourse.presentation.uiKit.MessageInputField
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = viewModel(
-        factory = ChatViewModelFactory(
-            LocalContext.current.applicationContext as Application
-        )
-    )
+    navController: NavController,
+    ragIndexId: String,
+    viewModel: ChatViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var messageText by remember { mutableStateOf("") }
@@ -136,6 +131,10 @@ fun ChatScreen(
 @Composable
 fun ChatScreenPreview() {
     AiCourseTheme {
-        ChatScreen()
+        ChatScreen(
+            navController = TODO(),
+            ragIndexId = TODO(),
+            viewModel = TODO()
+        )
     }
 }
