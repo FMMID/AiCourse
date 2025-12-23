@@ -1,7 +1,9 @@
 package com.example.aicourse.domain.chat.promt.dynamicSystemPrompt
 
+import android.content.Context
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.domain.chat.promt.DynamicSystemPrompt
+import com.example.aicourse.domain.utils.ResourceReader
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -21,7 +23,7 @@ import kotlinx.serialization.Serializable
 //  переключением разных имплементаций SystemPrompt, что делает эту релизацию бесполезной
 @Serializable
 @SerialName("dynamic_system_prompt")
-data class DynamicSystemPrompt(var activeInternalPrompt: InternalPromptConfig? = null) : SystemPrompt<DynamicSystemPromptResponse> {
+data class DynamicSystemPrompt(var activeInternalPrompt: InternalPromptConfig? = null) : DynamicSystemPrompt<DynamicSystemPromptResponse> {
 
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f
@@ -42,15 +44,16 @@ data class DynamicSystemPrompt(var activeInternalPrompt: InternalPromptConfig? =
         )
     )
 
+    companion object {
+        private val ACTIVATION_TRIGGERS = listOf("/dynamic", "/expert")
+    }
+
     /**
      * Возвращает contentResourceId активного внутреннего промпта
      * Если промпт не выбран, возвращает null (обычный режим без system content)
      */
-    override val contentResourceId: Int?
-        get() = activeInternalPrompt?.contentResourceId
-
-    companion object {
-        private val ACTIVATION_TRIGGERS = listOf("/dynamic", "/expert")
+    override fun loadSystemPrompt(context: Context): String? {
+        return activeInternalPrompt?.contentResourceId?.let { ResourceReader.readRawResource(context, it) }
     }
 
     /**

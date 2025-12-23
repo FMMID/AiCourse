@@ -3,7 +3,7 @@ package com.example.aicourse.domain.chat.promt.dynamicModel
 import android.util.Log
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.ModelType
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.domain.chat.promt.StaticSystemPrompt
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -22,7 +22,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @SerialName("dynamic_model")
-data class DynamicModelPrompt(private var currentModelType: ModelType? = null) : SystemPrompt<DynamicModelResponse> {
+data class DynamicModelPrompt(private var currentModelType: ModelType? = null) : StaticSystemPrompt<DynamicModelResponse> {
 
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f

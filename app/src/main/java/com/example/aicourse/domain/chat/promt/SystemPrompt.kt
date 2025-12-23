@@ -1,6 +1,8 @@
 package com.example.aicourse.domain.chat.promt
 
+import android.content.Context
 import com.example.aicourse.domain.chat.model.ModelType
+import com.example.aicourse.domain.utils.ResourceReader
 
 /**
  * Базовый interface для system prompts
@@ -13,7 +15,6 @@ interface SystemPrompt<out R : BotResponse> {
     val temperature: Float
     val topP: Float
     val maxTokens: Int
-    val contentResourceId: Int?
     val modelType: ModelType?
         get() = null // По умолчанию используется модель провайдера по умолчанию
 
@@ -40,4 +41,12 @@ interface SystemPrompt<out R : BotResponse> {
      * @return локальный ответ если сообщение обработано, null если нужно отправить к API
      */
     fun handleMessageLocally(message: String): R? = null
+
+    fun extractSystemPrompt(context: Context): String? {
+        return when (this) {
+            is StaticSystemPrompt<*> -> contentResourceId?.let { ResourceReader.readRawResource(context, it) }
+            is DynamicSystemPrompt<*> -> loadSystemPrompt(context)
+            else -> null
+        }
+    }
 }
