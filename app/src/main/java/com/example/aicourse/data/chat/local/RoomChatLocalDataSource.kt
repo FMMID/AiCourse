@@ -3,8 +3,8 @@ package com.example.aicourse.data.chat.local
 import com.example.aicourse.data.chat.local.room.converters.PolymorphicJson
 import com.example.aicourse.data.chat.local.room.dao.ChatDao
 import com.example.aicourse.data.chat.local.room.mapper.ChatStateMapper
-import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.chat.model.ChatStateModel
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.model.HistoryStrategy
 import com.example.aicourse.domain.settings.model.OutPutDataStrategy
@@ -23,7 +23,8 @@ import kotlinx.coroutines.withContext
  */
 class RoomChatLocalDataSource(
     private val chatDao: ChatDao,
-    private val mapper: ChatStateMapper
+    private val mapper: ChatStateMapper,
+    private val initActiveUserPrompt: SystemPrompt<*>
 ) : ChatLocalDataSource {
 
     private val json = PolymorphicJson.instance
@@ -106,7 +107,7 @@ class RoomChatLocalDataSource(
             chatMessages = mutableListOf(),
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
-            activeSystemPrompt = AppInjector.initActiveUserPrompt
+            activeSystemPrompt = initActiveUserPrompt
         )
     }
 }

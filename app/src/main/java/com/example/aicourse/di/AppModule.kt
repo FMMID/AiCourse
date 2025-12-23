@@ -6,6 +6,7 @@ import com.example.aicourse.data.chat.local.ChatLocalDataSource
 import com.example.aicourse.data.chat.local.ChatLocalDataSource.Companion.MAIN_CHAT_ID
 import com.example.aicourse.data.chat.local.RoomChatLocalDataSource
 import com.example.aicourse.data.chat.local.room.ChatDatabase
+import com.example.aicourse.data.chat.local.room.dao.ChatDao
 import com.example.aicourse.data.chat.local.room.mapper.ChatStateMapper
 import com.example.aicourse.data.chat.remote.BaseChatRemoteDataSource
 import com.example.aicourse.data.chat.remote.gigachat.GigaChatDataSource
@@ -30,64 +31,44 @@ import com.example.aicourse.mcpclient.McpClientFactory
 import com.example.aicourse.mcpclient.UserSession
 import com.example.aicourse.presentation.chat.mvi.ChatViewModel
 import com.example.aicourse.presentation.settings.mvi.SettingsViewModel
-import com.example.aicourse.rag.data.RagRepositoryImp
-import com.example.aicourse.rag.domain.RagRepository
-import com.example.aicourse.rag.presentation.RagViewModel
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
 
+
+private val initActiveUserPrompt = AdbManagerPrompt()
+private val mcpConfigs = listOf(
+    McpClientConfig(BuildConfig.MCP_NOTE_URL),
+    McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL)
+)
+private val mcpClients = mcpConfigs.map { McpClientFactory.createMcpClient(it) }
+
 val appModule = module {
-// --- Database & Local Data Source ---
-    single { ChatDatabase.getInstance(androidContext()) }
-
-    single { get<ChatDatabase>().chatDao() }
-
-    factory { ChatStateMapper() }
-
+    // --- Database & Local Data Source ---
+    single<ChatDatabase> { ChatDatabase.getInstance(androidContext()) }
+    single<ChatDao> { get<ChatDatabase>().chatDao() }
+    factory<ChatStateMapper> { ChatStateMapper() }
     single<ChatLocalDataSource> {
-        RoomChatLocalDataSource(get(), get())
-    }
-
-    // --- MCP Configuration & Clients ---
-    single {
-        listOf(
-            McpClientConfig(BuildConfig.MCP_NOTE_URL),
-            McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL)
+        RoomChatLocalDataSource(
+            chatDao = get(),
+            mapper = get(),
+            initActiveUserPrompt = initActiveUserPrompt
         )
     }
 
-    // Создаем список клиентов (single, как val mcpClients в AppInjector)
-    single {
-        get<List<McpClientConfig>>().map { McpClientFactory.createMcpClient(it) }
-    }
+    // MCP
+    single<McpRemoteDataSource> { McpRemoteDataSource() }
+    single<McpRepository> { McpRepositoryImp(mcpRemoteDataSource = get()) }
 
-    single { McpRemoteDataSource() }
-
-    single<McpRepository> { McpRepositoryImp(get()) }
-
-    // --- Initial Prompts ---
-    single { AdbManagerPrompt() }
-
-    // --- Chat State Model (Stateful) ---
-    // В AppInjector это делается через runBlocking при первом обращении.
-    // Оставляем single, чтобы загрузить один раз.
-    single<ChatStateModel> {
-        runBlocking {
-            get<ChatLocalDataSource>().getChatState(MAIN_CHAT_ID)
-        }
-    }
 
     // --- Remote Data Sources Factory ---
-    // Используем factory с параметрами, чтобы динамически выбирать реализацию и передавать ключ.
-    // Вызывается как: get<BaseChatRemoteDataSource> { parametersOf(apiImplementation) }
     factory<BaseChatRemoteDataSource> { (apiImplementation: ApiImplementation) ->
         when (apiImplementation) {
             ApiImplementation.GIGA_CHAT -> GigaChatDataSource(
                 authorizationKey = apiImplementation.key,
-                mcpClients = get(), // Инжектим созданные выше клиенты
+                mcpClients = mcpClients,
                 userId = UserSession.CURRENT_USER_ID
             )
 
@@ -97,23 +78,18 @@ val appModule = module {
         }
     }
 
-    // --- Repositories ---
+    single<ChatStateModel> { runBlocking { get<ChatLocalDataSource>().getChatState(MAIN_CHAT_ID) } }
 
     // ContextRepository (всегда использует HuggingFace, как в AppInjector)
     single<ContextRepository> {
-        val huggingFaceSource = get<BaseChatRemoteDataSource> {
-            parametersOf(ApiImplementation.HUGGING_FACE)
-        }
-        ContextRepositoryImp(huggingFaceSource)
+        val huggingFaceSource = get<BaseChatRemoteDataSource> { parametersOf(ApiImplementation.HUGGING_FACE) }
+        ContextRepositoryImp(summarizeContextDataSource = huggingFaceSource)
     }
 
     // ChatRepository
-    // Зависит от текущих настроек в ChatStateModel
     single<ChatRepository> {
         val stateModel = get<ChatStateModel>()
         val apiImpl = stateModel.settingsChatModel.currentUseApiImplementation
-
-        // Получаем нужный RemoteDataSource на основе настроек
         val remoteDataSource = get<BaseChatRemoteDataSource> { parametersOf(apiImpl) }
 
         ChatRepositoryImpl(androidContext(), remoteDataSource, get())
@@ -123,11 +99,11 @@ val appModule = module {
     single<ChatStrategy> {
         SimpleChatStrategy(
             initChatStateModel = get(),
-            applicationContext = androidContext()
+            applicationContext = androidContext(),
+            contextRepository = get(),
+            initialSystemPrompt = initActiveUserPrompt
         )
     }
-
-    single<RagRepository> { RagRepositoryImp(androidContext()) }
 
     // --- Use Cases ---
     // UseCases обычно легкие и не хранят состояние, поэтому factory
@@ -138,18 +114,12 @@ val appModule = module {
     factory { GetHistoryChatUseCase(chatRepository = get()) }
 
     // --- ViewModels ---
-
     // SettingsViewModel
     viewModel {
         SettingsViewModel(
-            application = androidContext() as Application
-        )
-    }
-
-    // RagViewModel
-    viewModel {
-        RagViewModel(
-            application = androidContext() as Application
+            application = androidContext() as Application,
+            settingsChatUseCase = get(),
+            getLocalMcpToolsUseCase = get()
         )
     }
 
@@ -160,8 +130,6 @@ val appModule = module {
             application = androidContext() as Application,
             chatId = chatId,
             ragIndexId = ragIndexId,
-            // Внимание: RagRepository должен быть где-то объявлен (single/factory),
-            // иначе здесь упадет. Если его нет, добавь `single { RagRepositoryImpl(...) }` выше.
             ragRepository = get(),
             sendMessageChatUseCase = get(),
             clearHistoryChatUseCase = get(),

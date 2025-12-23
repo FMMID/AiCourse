@@ -1,7 +1,6 @@
 package com.example.aicourse.domain.chat.strategy
 
-import android.app.Application
-import com.example.aicourse.di.AppInjector
+import android.content.Context
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
@@ -19,6 +18,7 @@ import com.example.aicourse.domain.settings.model.HistoryStrategy
 import com.example.aicourse.domain.settings.model.OutPutDataStrategy
 import com.example.aicourse.domain.settings.model.TokenConsumptionMode
 import com.example.aicourse.domain.tools.Tool
+import com.example.aicourse.domain.tools.context.ContextRepository
 import com.example.aicourse.domain.tools.context.ContextWindowManager
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.domain.tools.context.model.ContextWindow
@@ -28,7 +28,9 @@ import java.util.UUID
 
 class SimpleChatStrategy(
     initChatStateModel: ChatStateModel,
-    private val applicationContext: Application
+    private val applicationContext: Context,
+    private val contextRepository: ContextRepository,
+    private val initialSystemPrompt: SystemPrompt<*>
 ) : ChatStrategy {
 
     override var chatStateModel: ChatStateModel = initChatStateModel
@@ -40,7 +42,7 @@ class SimpleChatStrategy(
             keepLastMessagesNumber = 1,
             summaryThreshold = 0.4f
         ),
-        contextRepository = AppInjector.createContextRepository(chatStateModel.settingsChatModel),
+        contextRepository = contextRepository,
         applicationContext = applicationContext,
     )
 
@@ -139,7 +141,7 @@ class SimpleChatStrategy(
             chatMessages = mutableListOf(),
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
-            activeSystemPrompt = AppInjector.initActiveUserPrompt
+            activeSystemPrompt = initialSystemPrompt
         )
     }
 

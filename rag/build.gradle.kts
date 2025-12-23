@@ -45,6 +45,11 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.logging)
 
+    // Koin
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+
+
     //UI
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.lifecycle.runtime.ktx)
