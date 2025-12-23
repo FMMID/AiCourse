@@ -8,6 +8,7 @@ import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.usecase.ClearHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.GetHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.SendMessageChatUseCase
+import com.example.aicourse.domain.chat.usecase.SetRagModelUseCase
 import com.example.aicourse.presentation.base.BaseViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -15,11 +16,18 @@ import java.util.UUID
 
 class ChatViewModel(
     application: Application,
+    ragIndexId: String?,
     private val chatId: String,
     private val sendMessageChatUseCase: SendMessageChatUseCase,
     private val clearHistoryChatUseCase: ClearHistoryChatUseCase,
-    private val getHistoryChatUseCase: GetHistoryChatUseCase
-) : BaseViewModel<ChatUiState, ChatIntent>(application, ChatUiState()) {
+    private val getHistoryChatUseCase: GetHistoryChatUseCase,
+    private val setRagModelUseCase: SetRagModelUseCase
+) : BaseViewModel<ChatUiState, ChatIntent>(
+    application, ChatUiState(
+        showRagButton = ragIndexId != null,
+        isRagModeEnabled = false
+    )
+) {
 
     init {
         viewModelScope.launch {
@@ -40,6 +48,11 @@ class ChatViewModel(
         when (intent) {
             is ChatIntent.SendMessage -> sendMessage(intent.text)
             is ChatIntent.ClearHistory -> clearHistory()
+            ChatIntent.ToggleRagMode -> {
+                val newMode = !_uiState.value.isRagModeEnabled
+                _uiState.update { it.copy(isRagModeEnabled = newMode) }
+                viewModelScope.launch { setRagModelUseCase(newMode) }
+            }
         }
     }
 

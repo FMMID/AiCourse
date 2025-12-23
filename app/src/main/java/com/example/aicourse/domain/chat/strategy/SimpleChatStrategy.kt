@@ -146,6 +146,13 @@ class SimpleChatStrategy(
         )
     }
 
+    override suspend fun setRagMode(isEnabled: Boolean) {
+        chatStateModel.isRagEnabled = isEnabled
+        if (!isEnabled && chatStateModel.activeSystemPrompt is RagAssistantPrompt) {
+            chatStateModel.activeSystemPrompt = PlainTextPrompt()
+        }
+    }
+
     private fun handleLocalMessage(message: String, activeSystemPrompt: SystemPrompt<*>): Message? {
         val localResponse = activeSystemPrompt.handleMessageLocally(message)
         return localResponse?.let {
@@ -183,13 +190,15 @@ class SimpleChatStrategy(
         }
 
         if (matchedPrompt is RagAssistantPrompt && !chatStateModel.ragIndexId.isNullOrBlank()) {
-            val ragDocuments = ragPipeline.retrieve(content)
-            matchedPrompt.ragDocumentChunks = ragDocuments
+            if (!chatStateModel.ragIndexId.isNullOrBlank() && chatStateModel.isRagEnabled) {
+                val ragDocuments = ragPipeline.retrieve(content)
+                matchedPrompt.ragDocumentChunks = ragDocuments
+            } else {
+                return PlainTextPrompt()
+            }
         }
 
-        return availablePrompts.firstOrNull { prompt ->
-            prompt.matches(content)
-        }
+        return matchedPrompt
     }
 
     /**

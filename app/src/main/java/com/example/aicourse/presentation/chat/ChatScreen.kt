@@ -6,10 +6,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,9 +35,11 @@ import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 import com.example.aicourse.presentation.chat.message.MessagesList
 import com.example.aicourse.presentation.chat.mvi.ChatIntent
+import com.example.aicourse.presentation.chat.mvi.ChatUiState
 import com.example.aicourse.presentation.chat.mvi.ChatViewModel
 import com.example.aicourse.presentation.uiKit.MessageInputField
 import com.example.aicourse.ui.theme.AiCourseTheme
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +60,13 @@ fun ChatScreen(
 
     Scaffold(
         topBar = {
+            ChatTopBar(
+                state = uiState,
+                ragIndexId = ragIndexId,
+                onBackClick = { navController.popBackStack() },
+                onToggleRag = { viewModel.handleIntent(ChatIntent.ToggleRagMode) },
+                onClearClick = { viewModel.handleIntent(ChatIntent.ClearHistory) }
+            )
             TopAppBar(
                 title = { Text(stringResource(R.string.chat_title)) },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -71,6 +84,17 @@ fun ChatScreen(
                         )
                     }
                 }
+            )
+        },
+        bottomBar = {
+            MessageInputField(
+                value = messageText,
+                onValueChange = { messageText = it },
+                onSendClick = {
+                    viewModel.handleIntent(ChatIntent.SendMessage(messageText))
+                    messageText = ""
+                },
+                enabled = !uiState.isLoading
             )
         }
     ) { paddingValues ->
@@ -113,18 +137,79 @@ fun ChatScreen(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-
-            MessageInputField(
-                value = messageText,
-                onValueChange = { messageText = it },
-                onSendClick = {
-                    viewModel.handleIntent(ChatIntent.SendMessage(messageText))
-                    messageText = ""
-                },
-                enabled = !uiState.isLoading
-            )
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatTopBar(
+    state: ChatUiState,
+    ragIndexId: String,
+    onBackClick: () -> Unit,
+    onToggleRag: () -> Unit,
+    onClearClick: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Column {
+                Text(stringResource(R.string.chat_title))
+                if (state.isRagModeEnabled && ragIndexId.isNotEmpty()) {
+                    Text(
+                        text = "RAG: $ragIndexId",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Назад"
+                )
+            }
+        },
+        actions = {
+            if (state.showRagButton) {
+                IconToggleButton(
+                    checked = state.isRagModeEnabled,
+                    onCheckedChange = { onToggleRag() }
+                ) {
+                    val icon = if (state.isRagModeEnabled) {
+                        Icons.AutoMirrored.Filled.LibraryBooks
+                    } else {
+                        Icons.AutoMirrored.Outlined.LibraryBooks
+                    }
+
+                    val tint = if (state.isRagModeEnabled) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = if (state.isRagModeEnabled) "Выключить RAG" else "Включить RAG",
+                        tint = tint
+                    )
+                }
+            } else {
+                IconButton(onClick = { onClearClick() }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.clear_history_description),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    )
 }
 
 @Preview(showBackground = true)

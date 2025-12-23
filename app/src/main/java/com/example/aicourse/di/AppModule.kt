@@ -22,6 +22,7 @@ import com.example.aicourse.domain.chat.strategy.SimpleChatStrategy
 import com.example.aicourse.domain.chat.usecase.ClearHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.GetHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.SendMessageChatUseCase
+import com.example.aicourse.domain.chat.usecase.SetRagModelUseCase
 import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.repository.McpRepository
 import com.example.aicourse.domain.settings.usecase.GetLocalMcpToolsUseCase
@@ -131,6 +132,10 @@ val appModule = module {
 
     factory<GetHistoryChatUseCase> { GetHistoryChatUseCase(chatRepository = get<ChatRepository>()) }
 
+    factory<SetRagModelUseCase> { (ragIndexId: String?) ->
+        SetRagModelUseCase(chatStrategy = get<ChatStrategy>() { parametersOf(ragIndexId) })
+    }
+
     // --- ViewModels ---
     // SettingsViewModel
     viewModel {
@@ -147,9 +152,11 @@ val appModule = module {
         ChatViewModel(
             application = androidContext() as Application,
             chatId = chatId,
+            ragIndexId = ragIndexId,
             sendMessageChatUseCase = get<SendMessageChatUseCase>() { parametersOf(ragIndexId) },
             clearHistoryChatUseCase = get<ClearHistoryChatUseCase>() { parametersOf(ragIndexId) },
-            getHistoryChatUseCase = get<GetHistoryChatUseCase>()
+            getHistoryChatUseCase = get<GetHistoryChatUseCase>(),
+            setRagModelUseCase = get<SetRagModelUseCase> { parametersOf(ragIndexId) }
         )
     }
 }
