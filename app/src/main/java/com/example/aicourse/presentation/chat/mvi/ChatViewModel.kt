@@ -2,14 +2,13 @@ package com.example.aicourse.presentation.chat.mvi
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
-import com.example.aicourse.data.chat.local.ChatLocalDataSource.Companion.MAIN_CHAT_ID
-import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.usecase.ClearHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.GetHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.SendMessageChatUseCase
+import com.example.aicourse.domain.chat.usecase.SetRagModelUseCase
 import com.example.aicourse.presentation.base.BaseViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -17,10 +16,12 @@ import java.util.UUID
 
 class ChatViewModel(
     application: Application,
-    private val chatId: String = MAIN_CHAT_ID,
-    private val sendMessageChatUseCase: SendMessageChatUseCase = AppInjector.createSendMessageChatUseCase(application),
-    private val clearHistoryChatUseCase: ClearHistoryChatUseCase = AppInjector.createClearHistoryChatUseCase(application),
-    private val getHistoryChatUseCase: GetHistoryChatUseCase = AppInjector.createGetHistoryChatUseCase(application)
+    ragIndexId: String?,
+    private val chatId: String,
+    private val sendMessageChatUseCase: SendMessageChatUseCase,
+    private val clearHistoryChatUseCase: ClearHistoryChatUseCase,
+    private val getHistoryChatUseCase: GetHistoryChatUseCase,
+    private val setRagModelUseCase: SetRagModelUseCase
 ) : BaseViewModel<ChatUiState, ChatIntent>(application, ChatUiState()) {
 
     init {
@@ -31,7 +32,9 @@ class ChatViewModel(
                         messages = chatStateModel.chatMessages,
                         isLoading = false,
                         error = null,
-                        activePrompt = chatStateModel.activeSystemPrompt
+                        activePrompt = chatStateModel.activeSystemPrompt,
+                        isRagModeEnabled = ragIndexId != null,
+                        showRagButton = ragIndexId != null,
                     )
                 }
             }
@@ -42,6 +45,11 @@ class ChatViewModel(
         when (intent) {
             is ChatIntent.SendMessage -> sendMessage(intent.text)
             is ChatIntent.ClearHistory -> clearHistory()
+            ChatIntent.ToggleRagMode -> {
+                val newMode = !_uiState.value.isRagModeEnabled
+                _uiState.update { it.copy(isRagModeEnabled = newMode) }
+                viewModelScope.launch { setRagModelUseCase(newMode) }
+            }
         }
     }
 

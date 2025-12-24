@@ -15,4 +15,6 @@ interface ChatStrategy {
     suspend fun processReceivedData(sendMessageResult: SendMessageResult): DataForReceive
 
     suspend fun clear()
+
+    suspend fun setRagMode(isEnabled: Boolean)
 }

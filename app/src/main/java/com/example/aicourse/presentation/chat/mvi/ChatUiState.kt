@@ -12,4 +12,6 @@ data class ChatUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val activePrompt: SystemPrompt<*> = PlainTextPrompt(),
+    val isRagModeEnabled: Boolean = false,
+    val showRagButton: Boolean = false
 )

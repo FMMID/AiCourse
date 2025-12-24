@@ -2,18 +2,16 @@ package com.example.aicourse.presentation.settings.mvi
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
-import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.settings.usecase.GetLocalMcpToolsUseCase
 import com.example.aicourse.domain.settings.usecase.SettingsChatUseCase
 import com.example.aicourse.presentation.base.BaseViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-//TODO после прикрутки DI сделать прокидывание единственного инстанса SettingsUseCase
 class SettingsViewModel(
     application: Application,
-    private val settingsChatUseCase: SettingsChatUseCase = SettingsChatUseCase(),
-    private val getLocalMcpToolsUseCase: GetLocalMcpToolsUseCase = GetLocalMcpToolsUseCase(AppInjector.createMcpRepository())
+    private val settingsChatUseCase: SettingsChatUseCase,
+    private val getLocalMcpToolsUseCase: GetLocalMcpToolsUseCase
 ) : BaseViewModel<SettingsUiState, SettingsIntent>(application, SettingsUiState()) {
 
     //TODO добавить получение актуального состояния settingsChatModel из settingsUseCase для фомирования начального состояния  SettingsUiState()

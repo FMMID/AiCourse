@@ -1,16 +1,19 @@
 package com.example.aicourse.presentation.chat
 
-import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -24,33 +27,54 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 import com.example.aicourse.presentation.chat.message.MessagesList
 import com.example.aicourse.presentation.chat.mvi.ChatIntent
+import com.example.aicourse.presentation.chat.mvi.ChatUiState
 import com.example.aicourse.presentation.chat.mvi.ChatViewModel
-import com.example.aicourse.presentation.chat.mvi.ChatViewModelFactory
 import com.example.aicourse.presentation.uiKit.MessageInputField
 import com.example.aicourse.ui.theme.AiCourseTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
+// --- 1. STATEFUL COMPOSABLE (Для использования в навигации) ---
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = viewModel(
-        factory = ChatViewModelFactory(
-            LocalContext.current.applicationContext as Application
-        )
-    )
+    navController: NavController,
+    ragIndexId: String?,
+    viewModel: ChatViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Передаем состояние и события в Stateless компонент
+    ChatScreenContent(
+        uiState = uiState,
+        ragIndexId = ragIndexId,
+        onBackClick = { navController.popBackStack() },
+        onToggleRag = { viewModel.handleIntent(ChatIntent.ToggleRagMode) },
+        onClearClick = { viewModel.handleIntent(ChatIntent.ClearHistory) },
+        onSendMessage = { text -> viewModel.handleIntent(ChatIntent.SendMessage(text)) }
+    )
+}
+
+// --- 2. STATELESS COMPOSABLE (Чистый UI, который можно тестить и превьюить) ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatScreenContent(
+    uiState: ChatUiState,
+    ragIndexId: String?,
+    onBackClick: () -> Unit,
+    onToggleRag: () -> Unit,
+    onClearClick: () -> Unit,
+    onSendMessage: (String) -> Unit
+) {
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
+    // Авто-скролл вниз при добавлении сообщений
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.messages.size - 1)
@@ -59,23 +83,23 @@ fun ChatScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.chat_title)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.handleIntent(ChatIntent.ClearHistory) }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.clear_history_description),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
+            ChatTopBar(
+                state = uiState,
+                ragIndexId = ragIndexId,
+                onBackClick = onBackClick,
+                onToggleRag = onToggleRag,
+                onClearClick = onClearClick
+            )
+        },
+        bottomBar = {
+            MessageInputField(
+                value = messageText,
+                onValueChange = { messageText = it },
+                onSendClick = {
+                    onSendMessage(messageText)
+                    messageText = ""
+                },
+                enabled = !uiState.isLoading
             )
         }
     ) { paddingValues ->
@@ -86,6 +110,7 @@ fun ChatScreen(
                 .padding(top = dimensionResource(R.dimen.screen_padding_top))
         ) {
             if (uiState.activePrompt !is PlainTextPrompt) {
+                // Если activePrompt может быть null, добавь проверку uiState.activePrompt != null
                 ActivePromptIndicator(
                     activePrompt = uiState.activePrompt,
                     tokenUsage = uiState.messages.lastOrNull()?.tokenUsage,
@@ -118,24 +143,103 @@ fun ChatScreen(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-
-            MessageInputField(
-                value = messageText,
-                onValueChange = { messageText = it },
-                onSendClick = {
-                    viewModel.handleIntent(ChatIntent.SendMessage(messageText))
-                    messageText = ""
-                },
-                enabled = !uiState.isLoading
-            )
         }
     }
 }
 
+// --- 3. COMPONENTS ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatTopBar(
+    state: ChatUiState,
+    ragIndexId: String?,
+    onBackClick: () -> Unit,
+    onToggleRag: () -> Unit,
+    onClearClick: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Column {
+                Text(stringResource(R.string.chat_title))
+                if (state.isRagModeEnabled && ragIndexId?.isNotEmpty() == true) {
+                    Text(
+                        text = "RAG: $ragIndexId",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Назад"
+                )
+            }
+        },
+        actions = {
+            if (state.showRagButton) {
+                IconToggleButton(
+                    checked = state.isRagModeEnabled,
+                    onCheckedChange = { onToggleRag() }
+                ) {
+                    val icon = if (state.isRagModeEnabled) {
+                        Icons.AutoMirrored.Filled.LibraryBooks
+                    } else {
+                        Icons.AutoMirrored.Outlined.LibraryBooks
+                    }
+
+                    val tint = if (state.isRagModeEnabled) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = if (state.isRagModeEnabled) "Выключить RAG" else "Включить RAG",
+                        tint = tint
+                    )
+                }
+            }
+
+            IconButton(onClick = { onClearClick() }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.clear_history_description),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    )
+}
+
+// --- 4. PREVIEW ---
 @Preview(showBackground = true)
 @Composable
 fun ChatScreenPreview() {
     AiCourseTheme {
-        ChatScreen()
+        val mockState = ChatUiState(
+            messages = emptyList(),
+            isLoading = false,
+            isRagModeEnabled = true,
+            showRagButton = true,
+            error = null,
+            activePrompt = PlainTextPrompt()
+        )
+
+        ChatScreenContent(
+            uiState = mockState,
+            ragIndexId = "course_index_v1",
+            onBackClick = {},
+            onToggleRag = {},
+            onClearClick = {},
+            onSendMessage = {}
+        )
     }
 }

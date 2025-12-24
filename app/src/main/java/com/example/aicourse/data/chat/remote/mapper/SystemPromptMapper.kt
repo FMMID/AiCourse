@@ -4,7 +4,6 @@ import android.content.Context
 import com.example.aicourse.data.chat.remote.ChatConfig
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
-import com.example.aicourse.domain.utils.ResourceReader
 
 /**
  * Маппер для конвертации domain модели SystemPrompt в data модель ChatConfig
@@ -28,9 +27,8 @@ object SystemPromptMapper {
         resolvedModel: String? = null,
         contextSummaryInfo: ContextSummaryInfo? = null
     ): ChatConfig {
-        val baseSystemPrompt = systemPrompt.contentResourceId?.let { resourceId ->
-            ResourceReader.readRawResource(context, resourceId)
-        }
+
+        val baseSystemPrompt = systemPrompt.extractSystemPrompt(context)
 
         val contextSummaryText = contextSummaryInfo?.message?.let {
             """

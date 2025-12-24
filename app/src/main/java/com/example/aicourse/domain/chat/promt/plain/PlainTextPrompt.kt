@@ -1,5 +1,7 @@
 package com.example.aicourse.domain.chat.promt.plain
 
+import android.content.Context
+import com.example.aicourse.domain.chat.promt.StaticSystemPrompt
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -17,7 +19,7 @@ data class PlainTextPrompt(
     override val topP: Float = 0.1f,
     override val maxTokens: Int = 1024,
     override val contentResourceId: Int? = null,
-) : SystemPrompt<PlainTextResponse> {
+) : StaticSystemPrompt<PlainTextResponse> {
 
     /**
      * PlainTextPrompt - fallback промпт, не имеет триггеров

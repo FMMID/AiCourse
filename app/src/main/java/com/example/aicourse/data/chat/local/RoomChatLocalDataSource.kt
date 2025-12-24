@@ -3,8 +3,8 @@ package com.example.aicourse.data.chat.local
 import com.example.aicourse.data.chat.local.room.converters.PolymorphicJson
 import com.example.aicourse.data.chat.local.room.dao.ChatDao
 import com.example.aicourse.data.chat.local.room.mapper.ChatStateMapper
-import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.chat.model.ChatStateModel
+import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.model.HistoryStrategy
 import com.example.aicourse.domain.settings.model.OutPutDataStrategy
@@ -23,7 +23,8 @@ import kotlinx.coroutines.withContext
  */
 class RoomChatLocalDataSource(
     private val chatDao: ChatDao,
-    private val mapper: ChatStateMapper
+    private val mapper: ChatStateMapper,
+    private val initActiveUserPrompt: SystemPrompt<*>
 ) : ChatLocalDataSource {
 
     private val json = PolymorphicJson.instance
@@ -39,12 +40,7 @@ class RoomChatLocalDataSource(
      * @return ChatStateModel - всегда возвращаем непустой объект
      */
     override suspend fun getChatState(id: String): ChatStateModel = withContext(Dispatchers.IO) {
-        val data = chatDao.loadChatState(id)
-
-        // Если чата нет в БД - создаём дефолтное состояние (как в InMemoryDataSource)
-        if (data == null) {
-            return@withContext createDefaultChatState(id)
-        }
+        val data = chatDao.loadChatState(id) ?: return@withContext createDefaultChatState(id)
 
         // Конвертируем entities → domain модель
         mapper.toDomainModel(data)
@@ -100,13 +96,14 @@ class RoomChatLocalDataSource(
             id = id,
             settingsChatModel = SettingsChatModel(
                 currentUseApiImplementation = ApiImplementation.GIGA_CHAT,
-                historyStrategy = HistoryStrategy.PAIN,
+                historyStrategy = HistoryStrategy.ONE_MESSAGE,
                 outPutDataStrategy = OutPutDataStrategy.None
             ),
             chatMessages = mutableListOf(),
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
-            activeSystemPrompt = AppInjector.initActiveUserPrompt
+            activeSystemPrompt = initActiveUserPrompt,
+            ragIndexId = null
         )
     }
 }

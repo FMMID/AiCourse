@@ -1,6 +1,6 @@
 package com.example.aicourse.domain.tools.context
 
-import android.app.Application
+import android.content.Context
 import android.util.Log
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
@@ -12,18 +12,17 @@ import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.domain.tools.context.model.ContextWindow
 import com.example.aicourse.domain.tools.context.model.ContextWindowInfo
 import com.example.aicourse.domain.tools.context.model.HistoryWithSummaryInfo
-import com.example.aicourse.domain.utils.ResourceReader
 
 class ContextWindowManager(
     private val targetContextWindow: ContextWindow,
     private val contextRepository: ContextRepository,
-    private val applicationContext: Application
+    private val applicationContext: Context
 ) : Tool<Message> {
 
     private var contextInfo: ContextInfo = ContextInfo(sizeOfSummaryMessages = 0, sizeOfActiveMessages = 0, sizeOfSystemPrompt = 0)
     private var lastSummarizationError: String? = null
     private var lastOperationWasSummarized: Boolean = false
-    private var systemPromptTextSizeMap: MutableMap<Int, Int> = mutableMapOf()
+    private var systemPromptTextSizeMap: MutableMap<String, Int> = mutableMapOf()
 
     /**
      * Обрабатывает историю сообщений, выполняя суммаризацию при необходимости
@@ -169,12 +168,11 @@ class ContextWindowManager(
         activeSystemPrompt: SystemPrompt<*>,
         contextSummaryInfo: ContextSummaryInfo?
     ): Int {
-        val resourceId = activeSystemPrompt.contentResourceId
+        val systemPrompt = activeSystemPrompt.extractSystemPrompt(applicationContext)
 
-        val textTokens = if (resourceId != null) {
-            systemPromptTextSizeMap.getOrPut(resourceId) {
-                val text = ResourceReader.readRawResource(applicationContext, resourceId)
-                TokenEstimator.estimateTokenCount(text)
+        val textTokens = if (systemPrompt != null) {
+            systemPromptTextSizeMap.getOrPut(systemPrompt) {
+                TokenEstimator.estimateTokenCount(systemPrompt)
             }
         } else {
             0

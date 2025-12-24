@@ -1,7 +1,7 @@
 package com.example.aicourse.domain.chat.promt.json
 
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.domain.chat.promt.StaticSystemPrompt
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.json.JSONException
@@ -22,8 +22,7 @@ data class JsonOutputPrompt(
     override val topP: Float = 0.1f,
     override val maxTokens: Int = 1024,
     override val contentResourceId: Int? = R.raw.json_output_prompt,
-) : SystemPrompt<JsonOutputResponse> {
-
+) : StaticSystemPrompt<JsonOutputResponse> {
     companion object {
         private val COMMAND_TRIGGERS = listOf("/json")
         private val PREFIX_TRIGGERS = listOf("JSON:")

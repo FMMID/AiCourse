@@ -8,5 +8,6 @@ data class RagUiState(
     val processedChunks: List<DocumentChunk> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val showCreateDialog: Boolean = false // Показывать ли диалог создания
+    val showCreateDialog: Boolean = false, // Показывать ли диалог создания
+    val chatTargetId: String? = null
 )

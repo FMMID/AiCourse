@@ -1,34 +1,36 @@
 package com.example.aicourse.domain.chat.strategy
 
-import android.app.Application
-import com.example.aicourse.di.AppInjector
+import android.content.Context
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
 import com.example.aicourse.domain.chat.model.SendMessageResult
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.promt.dynamicModel.DynamicModelPrompt
-import com.example.aicourse.domain.chat.promt.dynamicSystemPrompt.DynamicSystemPrompt
 import com.example.aicourse.domain.chat.promt.dynamicTemperature.DynamicTemperaturePrompt
-import com.example.aicourse.domain.chat.promt.json.JsonOutputPrompt
-import com.example.aicourse.domain.chat.promt.pc.BuildComputerAssistantPrompt
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
+import com.example.aicourse.domain.chat.promt.ragAssistant.RagAssistantPrompt
 import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
 import com.example.aicourse.domain.settings.model.HistoryStrategy
 import com.example.aicourse.domain.settings.model.OutPutDataStrategy
 import com.example.aicourse.domain.settings.model.TokenConsumptionMode
 import com.example.aicourse.domain.tools.Tool
+import com.example.aicourse.domain.tools.context.ContextRepository
 import com.example.aicourse.domain.tools.context.ContextWindowManager
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.domain.tools.context.model.ContextWindow
 import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
 import com.example.aicourse.domain.tools.tokenComparePrevious.TokenCompareManager
+import com.example.aicourse.rag.domain.RagPipeline
 import java.util.UUID
 
 class SimpleChatStrategy(
     initChatStateModel: ChatStateModel,
-    private val applicationContext: Application
+    private val applicationContext: Context,
+    private val contextRepository: ContextRepository,
+    private val initialSystemPrompt: SystemPrompt<*>,
+    private val ragPipeline: RagPipeline
 ) : ChatStrategy {
 
     override var chatStateModel: ChatStateModel = initChatStateModel
@@ -40,7 +42,7 @@ class SimpleChatStrategy(
             keepLastMessagesNumber = 1,
             summaryThreshold = 0.4f
         ),
-        contextRepository = AppInjector.createContextRepository(chatStateModel.settingsChatModel),
+        contextRepository = contextRepository,
         applicationContext = applicationContext,
     )
 
@@ -139,8 +141,16 @@ class SimpleChatStrategy(
             chatMessages = mutableListOf(),
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
-            activeSystemPrompt = AppInjector.initActiveUserPrompt
+            activeSystemPrompt = initialSystemPrompt,
+            ragIndexId = chatStateModel.ragIndexId
         )
+    }
+
+    override suspend fun setRagMode(isEnabled: Boolean) {
+        chatStateModel.isRagEnabled = isEnabled
+        if (!isEnabled && chatStateModel.activeSystemPrompt is RagAssistantPrompt) {
+            chatStateModel.activeSystemPrompt = PlainTextPrompt()
+        }
     }
 
     private fun handleLocalMessage(message: String, activeSystemPrompt: SystemPrompt<*>): Message? {
@@ -167,21 +177,28 @@ class SimpleChatStrategy(
      * @param currentPrompt активный промпт в рамках текущего чата
      * @return подходящий SystemPrompt или null если триггеров не найдено
      */
-    private fun extractSystemPromptFromContent(
+    private suspend fun extractSystemPromptFromContent(
         content: String,
         currentPrompt: SystemPrompt<*>,
     ): SystemPrompt<*>? {
         val availablePrompts = listOf(
-            JsonOutputPrompt(),
-            BuildComputerAssistantPrompt(),
-            currentPrompt as? DynamicSystemPrompt ?: DynamicSystemPrompt(),
-            currentPrompt as? DynamicTemperaturePrompt ?: DynamicTemperaturePrompt(),
-            currentPrompt as? DynamicModelPrompt ?: DynamicModelPrompt(),
+            currentPrompt as? RagAssistantPrompt ?: RagAssistantPrompt(),
         )
 
-        return availablePrompts.firstOrNull { prompt ->
+        val matchedPrompt = availablePrompts.firstOrNull { prompt ->
             prompt.matches(content)
         }
+
+        if (matchedPrompt is RagAssistantPrompt && !chatStateModel.ragIndexId.isNullOrBlank()) {
+            if (!chatStateModel.ragIndexId.isNullOrBlank() && chatStateModel.isRagEnabled) {
+                val ragDocuments = ragPipeline.retrieve(content)
+                matchedPrompt.ragDocumentChunks = ragDocuments
+            } else {
+                return PlainTextPrompt()
+            }
+        }
+
+        return matchedPrompt
     }
 
     /**

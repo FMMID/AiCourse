@@ -11,7 +11,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Tool
 data class SettingsUiState(
     val settingsChatModel: SettingsChatModel = SettingsChatModel(
         currentUseApiImplementation = ApiImplementation.GIGA_CHAT,
-        historyStrategy = HistoryStrategy.PAIN,
+        historyStrategy = HistoryStrategy.ONE_MESSAGE,
         outPutDataStrategy = OutPutDataStrategy.None,
     ),
     val availableMcpClients: List<McpClientConfig> = listOf(

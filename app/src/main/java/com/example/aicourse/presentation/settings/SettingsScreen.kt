@@ -1,6 +1,5 @@
 package com.example.aicourse.presentation.settings
 
-import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,26 +15,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aicourse.BuildConfig
 import com.example.aicourse.R
-import com.example.aicourse.di.AppInjector
 import com.example.aicourse.mcpclient.McpClientConfig
 import com.example.aicourse.presentation.settings.mcpTools.McpClientSection
 import com.example.aicourse.presentation.settings.mvi.SettingsIntent
 import com.example.aicourse.presentation.settings.mvi.SettingsUiState
 import com.example.aicourse.presentation.settings.mvi.SettingsViewModel
-import com.example.aicourse.presentation.settings.mvi.SettingsViewModelFactory
 import com.example.aicourse.ui.theme.AiCourseTheme
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Settings screen for configuring chat parameters and managing MCP client tools.
@@ -44,13 +40,7 @@ import kotlinx.serialization.json.putJsonObject
  * @param viewModel The ViewModel managing settings state and MCP client operations
  */
 @Composable
-fun SettingsScreen(
-    viewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModelFactory(
-            LocalContext.current.applicationContext as Application
-        )
-    )
-) {
+fun SettingsScreen(viewModel: SettingsViewModel = koinViewModel()) {
     val settingsUiState by viewModel.uiState.collectAsState()
     SettingsScreenContent(
         settingsUiState = settingsUiState,
@@ -133,7 +123,10 @@ private fun SettingsScreenPreview() {
     AiCourseTheme {
         SettingsScreenContent(
             settingsUiState = SettingsUiState(
-                availableMcpClients = AppInjector.availableMcpConfigs,
+                availableMcpClients = listOf(
+                    McpClientConfig(BuildConfig.MCP_NOTE_URL),
+                    McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL)
+                ),
                 downloadedMcpClientTools = mapOf(
                     McpClientConfig(BuildConfig.MCP_NOTIFICATION_URL) to listOf(
                         Tool(

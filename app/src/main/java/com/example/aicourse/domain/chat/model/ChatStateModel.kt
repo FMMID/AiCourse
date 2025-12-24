@@ -1,6 +1,5 @@
 package com.example.aicourse.domain.chat.model
 
-import com.example.aicourse.di.AppInjector
 import com.example.aicourse.domain.chat.promt.BotResponse
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.settings.model.SettingsChatModel
@@ -14,5 +13,7 @@ data class ChatStateModel(
     val chatMessages: MutableList<Message>,
     var messagesForSendToAi: MutableList<Message>,
     var contextSummaryInfo: ContextSummaryInfo?, //TODO возможно занести под SettingsChatModel.historyStrategy
-    var activeSystemPrompt: SystemPrompt<BotResponse> = AppInjector.initActiveUserPrompt
+    var activeSystemPrompt: SystemPrompt<BotResponse>,
+    val ragIndexId: String?,
+    var isRagEnabled: Boolean = ragIndexId != null
 )

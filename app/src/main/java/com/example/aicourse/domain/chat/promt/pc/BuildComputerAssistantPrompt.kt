@@ -1,7 +1,7 @@
 package com.example.aicourse.domain.chat.promt.pc
 
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.domain.chat.promt.StaticSystemPrompt
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
  */
 @Serializable
 @SerialName("build_computer_assistant")
-class BuildComputerAssistantPrompt : SystemPrompt<PcBuildResponse> {
+class BuildComputerAssistantPrompt : StaticSystemPrompt<PcBuildResponse> {
 
     override val temperature: Float = 0.7f
     override val topP: Float = 0.9f

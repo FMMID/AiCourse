@@ -2,7 +2,7 @@ package com.example.aicourse.domain.chat.promt.dynamicTemperature
 
 import android.util.Log
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.domain.chat.promt.StaticSystemPrompt
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -24,7 +24,7 @@ import kotlinx.serialization.Serializable
 @SerialName("dynamic_temperature")
 data class DynamicTemperaturePrompt(
     private var currentTemperature: Float = DEFAULT_TEMPERATURE
-) : SystemPrompt<DynamicTemperatureResponse> {
+) : StaticSystemPrompt<DynamicTemperatureResponse> {
 
     override val temperature: Float
         get() = currentTemperature

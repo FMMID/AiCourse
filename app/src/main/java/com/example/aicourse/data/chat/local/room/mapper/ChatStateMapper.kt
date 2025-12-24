@@ -13,7 +13,6 @@ import com.example.aicourse.domain.chat.promt.BotResponse
 import com.example.aicourse.domain.settings.model.SettingsChatModel
 import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
-import kotlinx.serialization.encodeToString
 
 /**
  * Mapper для преобразования между domain моделями и Room entities
@@ -44,7 +43,8 @@ class ChatStateMapper {
             },
             activeSystemPromptJson = json.encodeToString(domain.activeSystemPrompt),
             createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis()
+            updatedAt = System.currentTimeMillis(),
+            ragIndexId = domain.ragIndexId
         )
 
         val chatMessages = domain.chatMessages.map { message ->
@@ -117,7 +117,8 @@ class ChatStateMapper {
             contextSummaryInfo = data.chat.contextSummaryInfoJson?.let {
                 json.decodeFromString<ContextSummaryInfo>(it)
             },
-            activeSystemPrompt = json.decodeFromString(data.chat.activeSystemPromptJson)
+            activeSystemPrompt = json.decodeFromString(data.chat.activeSystemPromptJson),
+            ragIndexId = data.chat.ragIndexId
         )
     }
 

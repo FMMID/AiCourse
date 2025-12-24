@@ -20,37 +20,46 @@ class SendMessageChatUseCase(
 ) : BaseUseCase<Message, ComplexBotMessage> {
 
     override suspend fun invoke(input: Message): Result<ComplexBotMessage> {
-        val chatResult = when (val dataForSend = chatStrategy.prepareData(userMessage = input)) {
-            is DataForSend.LocalResponse -> Result.success(
-                ComplexBotMessage(
-                    message = dataForSend.responseMessage,
-                    systemPrompt = dataForSend.activePrompt,
-                    toolResult = null
-                )
-            )
-
-            is DataForSend.RemoteCall -> {
-                val sendMessageResult = chatRepository.sendMessage(
-                    systemPrompt = dataForSend.activePrompt,
-                    messageHistory = dataForSend.messageHistory,
-                    contextSummaryInfo = dataForSend.contextSummaryInfo
+        return try {
+            val chatResult = when (val dataForSend = chatStrategy.prepareData(userMessage = input)) {
+                is DataForSend.LocalResponse -> Result.success(
+                    ComplexBotMessage(
+                        message = dataForSend.responseMessage,
+                        systemPrompt = dataForSend.activePrompt,
+                        toolResult = null
+                    )
                 )
 
-                sendMessageResult.map { result ->
-                    when (val dataForReceive = chatStrategy.processReceivedData(sendMessageResult = result)) {
-                        is DataForReceive.Simple -> {
-                            ComplexBotMessage(
-                                message = dataForReceive.message,
-                                systemPrompt = dataForReceive.activePrompt,
-                                toolResult = dataForReceive.toolResult
-                            )
+                is DataForSend.RemoteCall -> {
+                    val sendMessageResult = chatRepository.sendMessage(
+                        systemPrompt = dataForSend.activePrompt,
+                        messageHistory = dataForSend.messageHistory,
+                        contextSummaryInfo = dataForSend.contextSummaryInfo
+                    )
+
+                    sendMessageResult.map { result ->
+                        when (val dataForReceive = chatStrategy.processReceivedData(sendMessageResult = result)) {
+                            is DataForReceive.Simple -> {
+                                ComplexBotMessage(
+                                    message = dataForReceive.message,
+                                    systemPrompt = dataForReceive.activePrompt,
+                                    toolResult = dataForReceive.toolResult
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        chatRepository.saveChatSate(chatStrategy.chatStateModel)
-        return chatResult
+            chatRepository.saveChatSate(chatStrategy.chatStateModel)
+            chatResult
+        } catch (e: Exception) {
+            try {
+                chatRepository.saveChatSate(chatStrategy.chatStateModel)
+            } catch (saveError: Exception) {
+                e.addSuppressed(saveError)
+            }
+            Result.failure(e)
+        }
     }
 }
