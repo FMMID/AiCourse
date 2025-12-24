@@ -35,3 +35,4 @@ app/google-services.json
 .claude/
 /serverConfig/
 /.env
+/scripts/

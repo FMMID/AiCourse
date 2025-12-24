@@ -8,6 +8,7 @@ import com.example.aicourse.rag.data.local.JsonVectorStore
 import com.example.aicourse.rag.domain.EmbeddingModel
 import com.example.aicourse.rag.domain.RagPipeline
 import com.example.aicourse.rag.domain.RagRepository
+import com.example.aicourse.rag.domain.Reranker
 import com.example.aicourse.rag.domain.model.DocumentChunk
 import com.example.aicourse.rag.domain.textSplitter.RecursiveTextSplitter
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,8 @@ import kotlinx.coroutines.withContext
 class RagViewModel(
     application: Application,
     private val ragRepository: RagRepository,
-    private val embeddingService: EmbeddingModel
+    private val embeddingService: EmbeddingModel,
+    private val reranker: Reranker
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(RagUiState())
@@ -50,7 +52,8 @@ class RagViewModel(
             activePipeline = RagPipeline(
                 embeddingModel = embeddingService,
                 vectorStore = vectorStore,
-                textSplitter = RecursiveTextSplitter()
+                textSplitter = RecursiveTextSplitter(),
+                rerankerService = reranker
             )
 
             _uiState.value = _uiState.value.copy(
@@ -124,7 +127,8 @@ class RagViewModel(
                 val newPipeline = RagPipeline(
                     embeddingModel = embeddingService,
                     vectorStore = vectorStore,
-                    textSplitter = RecursiveTextSplitter()
+                    textSplitter = RecursiveTextSplitter(),
+                    reranker
                 )
 
                 val chunks = newPipeline.ingestDocument(relativePath, content)

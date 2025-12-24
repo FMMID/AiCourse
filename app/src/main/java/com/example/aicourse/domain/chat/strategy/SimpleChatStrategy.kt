@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
+import com.example.aicourse.domain.chat.model.RagMode
 import com.example.aicourse.domain.chat.model.SendMessageResult
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.chat.promt.dynamicModel.DynamicModelPrompt
@@ -142,13 +143,15 @@ class SimpleChatStrategy(
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
             activeSystemPrompt = initialSystemPrompt,
-            ragIndexId = chatStateModel.ragIndexId
+            ragIndexId = chatStateModel.ragIndexId,
+            ragMode = RagMode.DISABLED
         )
     }
 
-    override suspend fun setRagMode(isEnabled: Boolean) {
-        chatStateModel.isRagEnabled = isEnabled
-        if (!isEnabled && chatStateModel.activeSystemPrompt is RagAssistantPrompt) {
+    override suspend fun setRagMode(ragMode: RagMode) {
+        chatStateModel.ragMode = ragMode
+
+        if (ragMode == RagMode.DISABLED && chatStateModel.activeSystemPrompt is RagAssistantPrompt) {
             chatStateModel.activeSystemPrompt = PlainTextPrompt()
         }
     }
@@ -190,8 +193,13 @@ class SimpleChatStrategy(
         }
 
         if (matchedPrompt is RagAssistantPrompt && !chatStateModel.ragIndexId.isNullOrBlank()) {
-            if (!chatStateModel.ragIndexId.isNullOrBlank() && chatStateModel.isRagEnabled) {
-                val ragDocuments = ragPipeline.retrieve(content)
+            if (chatStateModel.ragMode != RagMode.DISABLED) {
+                val useReranker = (chatStateModel.ragMode == RagMode.WITH_RERANKER)
+                val ragDocuments = ragPipeline.retrieve(
+                    query = content,
+                    limit = 3,
+                    useReranker = useReranker
+                )
                 matchedPrompt.ragDocumentChunks = ragDocuments
             } else {
                 return PlainTextPrompt()
