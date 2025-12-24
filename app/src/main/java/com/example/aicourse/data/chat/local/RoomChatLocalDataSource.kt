@@ -96,7 +96,7 @@ class RoomChatLocalDataSource(
             id = id,
             settingsChatModel = SettingsChatModel(
                 currentUseApiImplementation = ApiImplementation.GIGA_CHAT,
-                historyStrategy = HistoryStrategy.PAIN,
+                historyStrategy = HistoryStrategy.ONE_MESSAGE,
                 outPutDataStrategy = OutPutDataStrategy.None
             ),
             chatMessages = mutableListOf(),

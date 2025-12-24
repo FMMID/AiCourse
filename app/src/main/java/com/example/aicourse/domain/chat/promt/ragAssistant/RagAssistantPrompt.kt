@@ -17,8 +17,8 @@ class RagAssistantPrompt(
 
     override fun loadSystemPrompt(context: Context): String? {
         val baseSystemPrompt = ResourceReader.readRawResource(context, R.raw.rag_system_prompt)
-        val chunksText = baseSystemPrompt + ragDocumentChunks.joinToString("\nКонтекст:") { it.text }
-        return baseSystemPrompt + chunksText
+        val completedContext = baseSystemPrompt + ragDocumentChunks.joinToString("\n.") { it.text }
+        return completedContext
     }
 
     override fun matches(message: String): Boolean = true

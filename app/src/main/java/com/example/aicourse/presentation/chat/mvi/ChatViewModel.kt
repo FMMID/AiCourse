@@ -22,12 +22,7 @@ class ChatViewModel(
     private val clearHistoryChatUseCase: ClearHistoryChatUseCase,
     private val getHistoryChatUseCase: GetHistoryChatUseCase,
     private val setRagModelUseCase: SetRagModelUseCase
-) : BaseViewModel<ChatUiState, ChatIntent>(
-    application, ChatUiState(
-        showRagButton = ragIndexId != null,
-        isRagModeEnabled = false
-    )
-) {
+) : BaseViewModel<ChatUiState, ChatIntent>(application, ChatUiState()) {
 
     init {
         viewModelScope.launch {
@@ -37,7 +32,9 @@ class ChatViewModel(
                         messages = chatStateModel.chatMessages,
                         isLoading = false,
                         error = null,
-                        activePrompt = chatStateModel.activeSystemPrompt
+                        activePrompt = chatStateModel.activeSystemPrompt,
+                        isRagModeEnabled = ragIndexId != null,
+                        showRagButton = ragIndexId != null,
                     )
                 }
             }
