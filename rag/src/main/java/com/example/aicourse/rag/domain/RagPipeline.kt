@@ -72,7 +72,7 @@ class RagPipeline(
         val rankedDocs = rerankerService.rerank(
             query = query,
             documents = candidates,
-            minScore = 0.6f
+            minScore = 0.4f
         )
 
         Log.d("RagPipeline", "Stage 2 (Reranker): Kept ${rankedDocs.size} documents")

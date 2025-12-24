@@ -10,6 +10,8 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
@@ -23,7 +25,10 @@ class OllamaRerankerService(
 
     private val client = HttpClient(OkHttp) {
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+            json(Json {
+                ignoreUnknownKeys = true
+                encodeDefaults = true
+            })
         }
         install(HttpTimeout) {
             requestTimeoutMillis = 60_000 // Реранкинг может занять время
@@ -53,24 +58,43 @@ class OllamaRerankerService(
     }
 
     private suspend fun evaluateRelevance(query: String, text: String): Float {
-        // Промпт заставляет модель вывести ТОЛЬКО число.
         val prompt = """
-            You are a relevance classifier. 
+            Task: Evaluate if the provided Context contains the answer to the Query.
+            
             Query: "$query"
             Context: "$text"
             
-            Rate the relevance of the Context to the Query on a scale from 0.0 (irrelevant) to 1.0 (highly relevant).
-            IMPORTANT: Output ONLY the number, no other text.
+            Scoring Rules:
+            1.0 - The Context contains the exact answer to the Query.
+            0.5 - The Context discusses the topic but does not contain the answer.
+            0.1 - The Context is irrelevant.
+            
+            IMPORTANT: Output ONLY the number (e.g., 1.0, 0.5, or 0.1). No explanation.
         """.trimIndent()
 
         return try {
-            val response: OllamaGenerateResponse = client.post("$baseUrl/api/generate") {
+            // 1. Получаем сырой ответ, а не парсим сразу
+            val httpResponse: HttpResponse = client.post("$baseUrl/api/generate") {
                 contentType(ContentType.Application.Json)
                 setBody(OllamaGenerateRequest(model = modelName, prompt = prompt))
-            }.body()
+            }
 
-            // Парсим число из ответа модели
-            response.response.trim().toFloatOrNull() ?: 0.0f
+            val responseBody = httpResponse.bodyAsText()
+
+            // 2. Логируем, что реально ответила Ollama
+            // Если там ошибка, мы увидим {"error": "..."}
+            Log.d("OllamaReranker", "Raw API Response: $responseBody")
+
+            // 3. Проверяем статус код
+            if (httpResponse.status.value !in 200..299) {
+                Log.e("OllamaReranker", "Server returned error: ${httpResponse.status}")
+                return 0.0f
+            }
+
+            // 4. Парсим вручную
+            val parsedResponse = json.decodeFromString<OllamaGenerateResponse>(responseBody)
+            parsedResponse.response.trim().toFloatOrNull() ?: 0.0f
+
         } catch (e: Exception) {
             Log.e("OllamaReranker", "Error evaluating relevance: ${e.message}")
             0.0f

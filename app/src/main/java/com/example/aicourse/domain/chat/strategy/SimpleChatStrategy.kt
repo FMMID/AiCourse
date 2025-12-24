@@ -192,18 +192,14 @@ class SimpleChatStrategy(
             prompt.matches(content)
         }
 
-        if (matchedPrompt is RagAssistantPrompt && !chatStateModel.ragIndexId.isNullOrBlank()) {
-            if (chatStateModel.ragMode != RagMode.DISABLED) {
-                val useReranker = (chatStateModel.ragMode == RagMode.WITH_RERANKER)
-                val ragDocuments = ragPipeline.retrieve(
-                    query = content,
-                    limit = 3,
-                    useReranker = useReranker
-                )
-                matchedPrompt.ragDocumentChunks = ragDocuments
-            } else {
-                return PlainTextPrompt()
-            }
+        if (matchedPrompt is RagAssistantPrompt && !chatStateModel.ragIndexId.isNullOrBlank() && chatStateModel.ragMode != RagMode.DISABLED) {
+            val useReranker = (chatStateModel.ragMode == RagMode.WITH_RERANKER)
+            val ragDocuments = ragPipeline.retrieve(
+                query = content,
+                limit = 3,
+                useReranker = useReranker
+            )
+            matchedPrompt.ragDocumentChunks = ragDocuments
         }
 
         return matchedPrompt
@@ -253,7 +249,7 @@ class SimpleChatStrategy(
         return when (chatStateModel.settingsChatModel.historyStrategy) {
             HistoryStrategy.PAIN -> messageHistory
 
-            HistoryStrategy.ONE_MESSAGE -> emptyList()
+            HistoryStrategy.ONE_MESSAGE -> messageHistory.takeLast(1)
 
             HistoryStrategy.SUMMARIZE -> contextWindowManager.processMessageHistory(
                 messageHistory = messageHistory,
