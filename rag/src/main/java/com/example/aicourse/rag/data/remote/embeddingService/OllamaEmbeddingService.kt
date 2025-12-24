@@ -1,4 +1,4 @@
-package com.example.aicourse.rag.data.remote
+package com.example.aicourse.rag.data.remote.embeddingService
 
 import android.util.Log
 import com.example.aicourse.rag.domain.EmbeddingModel

@@ -3,10 +3,12 @@ package com.example.aicourse.rag.di
 import android.app.Application
 import com.example.aicourse.rag.data.RagRepositoryImp
 import com.example.aicourse.rag.data.local.JsonVectorStore
-import com.example.aicourse.rag.data.remote.OllamaEmbeddingService
+import com.example.aicourse.rag.data.remote.embeddingService.OllamaEmbeddingService
+import com.example.aicourse.rag.data.remote.reranker.OllamaRerankerService
 import com.example.aicourse.rag.domain.EmbeddingModel
 import com.example.aicourse.rag.domain.RagPipeline
 import com.example.aicourse.rag.domain.RagRepository
+import com.example.aicourse.rag.domain.Reranker
 import com.example.aicourse.rag.domain.VectorStore
 import com.example.aicourse.rag.domain.textSplitter.RecursiveTextSplitter
 import com.example.aicourse.rag.domain.textSplitter.TextSplitter
@@ -24,6 +26,12 @@ val ragModule = module {
             modelName = "nomic-embed-text:latest"
         )
     }
+    single<Reranker> {
+        OllamaRerankerService(
+            baseUrl = "http://10.0.2.2:11434",
+            modelName = "qwen2.5:latest"
+        )
+    }
     single<TextSplitter> { RecursiveTextSplitter() }
 
     factory<VectorStore> { (ragFileName: String?) ->
@@ -34,7 +42,8 @@ val ragModule = module {
         RagPipeline(
             embeddingModel = get<EmbeddingModel>(),
             vectorStore = get<VectorStore> { parametersOf(indexId) },
-            textSplitter = get<TextSplitter>()
+            textSplitter = get<TextSplitter>(),
+            rerankerService = get<Reranker>(),
         )
     }
 
@@ -42,7 +51,8 @@ val ragModule = module {
         RagViewModel(
             application = androidContext() as Application,
             ragRepository = get<RagRepository>(),
-            embeddingService = get<EmbeddingModel>()
+            embeddingService = get<EmbeddingModel>(),
+            reranker = get<Reranker>()
         )
     }
 }

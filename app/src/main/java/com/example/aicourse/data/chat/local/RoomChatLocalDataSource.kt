@@ -4,6 +4,7 @@ import com.example.aicourse.data.chat.local.room.converters.PolymorphicJson
 import com.example.aicourse.data.chat.local.room.dao.ChatDao
 import com.example.aicourse.data.chat.local.room.mapper.ChatStateMapper
 import com.example.aicourse.domain.chat.model.ChatStateModel
+import com.example.aicourse.domain.chat.model.RagMode
 import com.example.aicourse.domain.chat.promt.SystemPrompt
 import com.example.aicourse.domain.settings.model.ApiImplementation
 import com.example.aicourse.domain.settings.model.HistoryStrategy
@@ -103,7 +104,8 @@ class RoomChatLocalDataSource(
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
             activeSystemPrompt = initActiveUserPrompt,
-            ragIndexId = null
+            ragIndexId = null,
+            ragMode = RagMode.DISABLED,
         )
     }
 }

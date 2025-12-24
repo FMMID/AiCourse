@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
+import com.example.aicourse.domain.chat.model.RagMode
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.usecase.ClearHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.GetHistoryChatUseCase
@@ -33,8 +34,8 @@ class ChatViewModel(
                         isLoading = false,
                         error = null,
                         activePrompt = chatStateModel.activeSystemPrompt,
-                        isRagModeEnabled = ragIndexId != null,
-                        showRagButton = ragIndexId != null,
+                        ragMode = chatStateModel.ragMode,
+                        showRagButton = ragIndexId != null
                     )
                 }
             }
@@ -45,12 +46,14 @@ class ChatViewModel(
         when (intent) {
             is ChatIntent.SendMessage -> sendMessage(intent.text)
             is ChatIntent.ClearHistory -> clearHistory()
-            ChatIntent.ToggleRagMode -> {
-                val newMode = !_uiState.value.isRagModeEnabled
-                _uiState.update { it.copy(isRagModeEnabled = newMode) }
-                viewModelScope.launch { setRagModelUseCase(newMode) }
-            }
+            is ChatIntent.SetRagMode -> changeRagMode(intent.mode)
         }
+    }
+
+    private fun changeRagMode(newMode: RagMode) {
+        if (_uiState.value.ragMode == newMode) return
+        _uiState.update { it.copy(ragMode = newMode) }
+        viewModelScope.launch { setRagModelUseCase(newMode) }
     }
 
     private fun sendMessage(text: String) {

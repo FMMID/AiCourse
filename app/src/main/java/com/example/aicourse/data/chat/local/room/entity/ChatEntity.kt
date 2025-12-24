@@ -57,5 +57,8 @@ data class ChatEntity(
     val updatedAt: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "rag_index_id")
-    val ragIndexId: String?
+    val ragIndexId: String?,
+
+    @ColumnInfo(name = "rag_mode")
+    val ragMode: String = "DISABLED"
 )

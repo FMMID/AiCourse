@@ -1,4 +1,4 @@
-package com.example.aicourse.rag.data.remote
+package com.example.aicourse.rag.data.remote.embeddingService
 
 import kotlinx.serialization.Serializable
 

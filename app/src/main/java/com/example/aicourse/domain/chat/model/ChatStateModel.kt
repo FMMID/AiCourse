@@ -15,5 +15,5 @@ data class ChatStateModel(
     var contextSummaryInfo: ContextSummaryInfo?, //TODO возможно занести под SettingsChatModel.historyStrategy
     var activeSystemPrompt: SystemPrompt<BotResponse>,
     val ragIndexId: String?,
-    var isRagEnabled: Boolean = ragIndexId != null
+    var ragMode: RagMode = if (ragIndexId != null) RagMode.STANDARD else RagMode.DISABLED
 )

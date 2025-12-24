@@ -7,13 +7,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.LibraryBooks
-import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,9 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.aicourse.R
+import com.example.aicourse.domain.chat.model.RagMode
 import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
+import com.example.aicourse.presentation.chat.components.RagModeSelector
+import com.example.aicourse.presentation.chat.components.RagStatusIndicator
 import com.example.aicourse.presentation.chat.message.MessagesList
 import com.example.aicourse.presentation.chat.mvi.ChatIntent
 import com.example.aicourse.presentation.chat.mvi.ChatUiState
@@ -54,7 +55,7 @@ fun ChatScreen(
         uiState = uiState,
         ragIndexId = ragIndexId,
         onBackClick = { navController.popBackStack() },
-        onToggleRag = { viewModel.handleIntent(ChatIntent.ToggleRagMode) },
+        onModeChange = { viewModel.handleIntent(ChatIntent.SetRagMode(it)) },
         onClearClick = { viewModel.handleIntent(ChatIntent.ClearHistory) },
         onSendMessage = { text -> viewModel.handleIntent(ChatIntent.SendMessage(text)) }
     )
@@ -67,7 +68,7 @@ fun ChatScreenContent(
     uiState: ChatUiState,
     ragIndexId: String?,
     onBackClick: () -> Unit,
-    onToggleRag: () -> Unit,
+    onModeChange: (RagMode) -> Unit,
     onClearClick: () -> Unit,
     onSendMessage: (String) -> Unit
 ) {
@@ -87,7 +88,7 @@ fun ChatScreenContent(
                 state = uiState,
                 ragIndexId = ragIndexId,
                 onBackClick = onBackClick,
-                onToggleRag = onToggleRag,
+                onModeChange = onModeChange,
                 onClearClick = onClearClick
             )
         },
@@ -154,18 +155,19 @@ fun ChatTopBar(
     state: ChatUiState,
     ragIndexId: String?,
     onBackClick: () -> Unit,
-    onToggleRag: () -> Unit,
+    onModeChange: (RagMode) -> Unit,
     onClearClick: () -> Unit
 ) {
     TopAppBar(
         title = {
             Column {
                 Text(stringResource(R.string.chat_title))
-                if (state.isRagModeEnabled && ragIndexId?.isNotEmpty() == true) {
-                    Text(
-                        text = "RAG: $ragIndexId",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
+                // Используем новый компонент
+                if (state.showRagButton) {
+                    RagStatusIndicator(
+                        ragMode = state.ragMode,
+                        ragIndexId = ragIndexId,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }
@@ -180,28 +182,11 @@ fun ChatTopBar(
         },
         actions = {
             if (state.showRagButton) {
-                IconToggleButton(
-                    checked = state.isRagModeEnabled,
-                    onCheckedChange = { onToggleRag() }
-                ) {
-                    val icon = if (state.isRagModeEnabled) {
-                        Icons.AutoMirrored.Filled.LibraryBooks
-                    } else {
-                        Icons.AutoMirrored.Outlined.LibraryBooks
-                    }
-
-                    val tint = if (state.isRagModeEnabled) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = if (state.isRagModeEnabled) "Выключить RAG" else "Включить RAG",
-                        tint = tint
-                    )
-                }
+                // Компонент меню выбора режима
+                RagModeSelector(
+                    currentMode = state.ragMode,
+                    onModeSelected = onModeChange
+                )
             }
 
             IconButton(onClick = { onClearClick() }) {
@@ -227,7 +212,7 @@ fun ChatScreenPreview() {
         val mockState = ChatUiState(
             messages = emptyList(),
             isLoading = false,
-            isRagModeEnabled = true,
+            ragMode = RagMode.STANDARD,
             showRagButton = true,
             error = null,
             activePrompt = PlainTextPrompt()
@@ -237,9 +222,9 @@ fun ChatScreenPreview() {
             uiState = mockState,
             ragIndexId = "course_index_v1",
             onBackClick = {},
-            onToggleRag = {},
             onClearClick = {},
-            onSendMessage = {}
+            onSendMessage = {},
+            onModeChange = { },
         )
     }
 }
