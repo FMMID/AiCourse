@@ -29,7 +29,7 @@ val ragModule = module {
     single<Reranker> {
         OllamaRerankerService(
             baseUrl = "http://10.0.2.2:11434",
-            modelName = "llama3.2:latest"
+            modelName = "qwen2.5:latest"
         )
     }
     single<TextSplitter> { RecursiveTextSplitter() }
