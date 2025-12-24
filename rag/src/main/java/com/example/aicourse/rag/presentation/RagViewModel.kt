@@ -127,7 +127,7 @@ class RagViewModel(
                     textSplitter = RecursiveTextSplitter()
                 )
 
-                val chunks = newPipeline.ingestDocument(sourceName, content)
+                val chunks = newPipeline.ingestDocument(relativePath, content)
 
                 activePipeline = newPipeline
                 cachedFullChunks = chunks

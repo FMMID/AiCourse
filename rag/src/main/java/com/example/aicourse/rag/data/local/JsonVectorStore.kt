@@ -35,14 +35,19 @@ class JsonVectorStore(
         }
     }
 
-    override suspend fun search(queryEmbedding: List<Float>, limit: Int): List<DocumentChunk> {
+    override suspend fun search(
+        queryEmbedding: List<Float>,
+        limit: Int,
+        minScore: Float
+    ): List<DocumentChunk> {
         if (memoryIndex.isEmpty()) loadIndex()
         return memoryIndex
             .map { doc ->
                 val similarity = cosineSimilarity(queryEmbedding, doc.embedding ?: emptyList())
                 doc to similarity
             }
-            .sortedByDescending { it.second } // Сортируем: от 1.0 (похож) к -1.0 (не похож)
+            .filter { it.second >= minScore }
+            .sortedByDescending { it.second }
             .take(limit)
             .map { (doc, score) ->
                 doc.copy(score = score.toFloat())

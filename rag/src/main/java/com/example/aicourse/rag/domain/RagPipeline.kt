@@ -40,8 +40,8 @@ class RagPipeline(
     }
 
     // Поиск (для использования в чате)
-    suspend fun retrieve(query: String, limit: Int = 3): List<DocumentChunk> {
+    suspend fun retrieve(query: String, limit: Int = 5, threshold: Float = 0.5f): List<DocumentChunk> {
         val queryVector = embeddingModel.embed(query)
-        return vectorStore.search(queryEmbedding = queryVector, limit = limit)
+        return vectorStore.search(queryEmbedding = queryVector, limit = limit, minScore = threshold)
     }
 }
