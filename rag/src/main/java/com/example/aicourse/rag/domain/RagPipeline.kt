@@ -10,7 +10,8 @@ class RagPipeline(
     private val repository: RagRepository,
     private val searchEngine: VectorSearchEngine,
     private val textSplitter: TextSplitter,
-    private val rerankerService: Reranker
+    private val rerankerService: Reranker,
+    private val queryExpander: QueryExpander = SimpleQueryExpander()
 ) {
 
     // Храним активную базу знаний в оперативной памяти для быстрого поиска
@@ -49,7 +50,7 @@ class RagPipeline(
      * Создание нового индекса из текста и сохранение через репозиторий
      */
     suspend fun ingestDocument(fileName: String, content: String): List<DocumentChunk> {
-        val rawChunks = textSplitter.split(content, chunkSize = 300, overlap = 20)
+        val rawChunks = textSplitter.split(content, chunkSize = 500, overlap = 100)
         val embeddings = embeddingModel.embedBatch(rawChunks)
 
         val docs = rawChunks.mapIndexed { index, text ->
@@ -70,24 +71,46 @@ class RagPipeline(
     suspend fun retrieve(
         query: String,
         limit: Int = 3,
-        useReranker: Boolean = false
+        useReranker: Boolean = false,
+        useMultiQuery: Boolean = false
     ): List<DocumentChunk> {
         if (activeKnowledgeBase.isEmpty()) {
             Log.w("RagPipeline", "Knowledge base is empty. Did you call loadActiveContext?")
             return emptyList()
         }
 
-        val queryVector = embeddingModel.embed(query)
+        // ЭТАП 0 (опционально): Мульти-запросы
+        val queries = if (useMultiQuery) {
+            queryExpander.expandQuery(query)
+        } else {
+            listOf(query)
+        }
+
+        Log.d("RagPipeline", "Searching with ${queries.size} query variations")
 
         // ЭТАП 1: Векторный поиск через SearchEngine
-        val candidatesCount = if (useReranker) limit * 5 else limit
+        val candidatesCount = if (useReranker) limit * 15 else limit
 
-        val candidates = searchEngine.search(
-            queryEmbedding = queryVector,
-            documents = activeKnowledgeBase, // Ищем по загруженным в память чанкам
-            limit = candidatesCount,
-            minScore = 0.6f
-        )
+        // Ищем по каждой вариации запроса
+        val allCandidates = queries.flatMap { queryVariant ->
+            val queryVector = embeddingModel.embed(queryVariant)
+            searchEngine.search(
+                queryEmbedding = queryVector,
+                documents = activeKnowledgeBase,
+                limit = candidatesCount,
+                minScore = 0.45f
+            )
+        }
+
+        // Объединяем результаты, убираем дубликаты по ID, сохраняем максимальный score
+        val candidates = allCandidates
+            .groupBy { it.id }
+            .map { (_, chunks) ->
+                chunks.maxByOrNull { it.score ?: 0f }!!
+            }
+            .sortedByDescending { it.score }
+            .take(candidatesCount)
+
         candidates.forEach { doc ->
             Log.d("RAG", "Score: ${doc.score}, Text: ${doc.text.take(50)}...")
         }
@@ -102,7 +125,7 @@ class RagPipeline(
         val rankedDocs = rerankerService.rerank(
             query = query,
             documents = candidates,
-            minScore = 0.4f // Повысил порог для качества
+            minScore = 0.2f // Низкий порог для пропуска частично релевантных чанков
         )
 
         Log.d("RagPipeline", "Stage 2 (Reranker): Kept ${rankedDocs.size} documents")

@@ -35,6 +35,35 @@ class RagAssistantPrompt(
     override fun matches(message: String): Boolean = true
 
     override fun parseResponse(rawResponse: String): PlainTextResponse {
-        return PlainTextResponse(rawContent = rawResponse)
+        // Проверяем, добавил ли LLM секцию "Источники:"
+        val hasSourcesSection = rawResponse.contains("**Источники:**") ||
+                                rawResponse.contains("Источники:") ||
+                                rawResponse.contains("ИСТОЧНИКИ:")
+
+        val finalResponse = if (!hasSourcesSection && ragDocumentChunks.isNotEmpty()) {
+            // LLM забыла добавить источники - добавляем автоматически
+            val sourcesSection = buildSourcesSection()
+            "$rawResponse\n\n$sourcesSection"
+        } else {
+            rawResponse
+        }
+
+        return PlainTextResponse(rawContent = finalResponse)
+    }
+
+    private fun buildSourcesSection(): String {
+        if (ragDocumentChunks.isEmpty()) return ""
+
+        // Получаем уникальные источники в порядке их появления
+        val uniqueSources = ragDocumentChunks
+            .map { it.source }
+            .distinct()
+
+        // Нумеруем уникальные источники
+        val sources = uniqueSources
+            .mapIndexed { index, source -> "[${index + 1}] $source" }
+            .joinToString(separator = "\n")
+
+        return "**Источники:**\n$sources"
     }
 }

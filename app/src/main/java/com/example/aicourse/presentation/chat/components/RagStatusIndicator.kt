@@ -45,6 +45,7 @@ fun RagStatusIndicator(
                 RagMode.DISABLED -> "RAG выключен"
                 RagMode.STANDARD -> "Индекс: $ragIndexId"
                 RagMode.WITH_RERANKER -> "Умный поиск: $ragIndexId"
+                RagMode.WITH_MULTIQUERY -> "Премиум: $ragIndexId"
             },
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant

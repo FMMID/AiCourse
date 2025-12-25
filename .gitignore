@@ -36,3 +36,4 @@ app/google-services.json
 /serverConfig/
 /.env
 /scripts/
+/featuresDocs/

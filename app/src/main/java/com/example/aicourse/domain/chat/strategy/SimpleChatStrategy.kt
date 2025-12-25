@@ -205,11 +205,13 @@ class SimpleChatStrategy(
         }
 
         if (matchedPrompt is RagAssistantPrompt && chatStateModel.ragIds.isNotEmpty() && chatStateModel.ragMode != RagMode.DISABLED) {
-            val useReranker = (chatStateModel.ragMode == RagMode.WITH_RERANKER)
+            val useReranker = (chatStateModel.ragMode == RagMode.WITH_RERANKER || chatStateModel.ragMode == RagMode.WITH_MULTIQUERY)
+            val useMultiQuery = (chatStateModel.ragMode == RagMode.WITH_MULTIQUERY)
             val ragDocuments = ragPipeline.retrieve(
                 query = content,
                 limit = 5,
-                useReranker = useReranker
+                useReranker = useReranker,
+                useMultiQuery = useMultiQuery
             )
             matchedPrompt.ragDocumentChunks = ragDocuments
         }

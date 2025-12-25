@@ -106,6 +106,18 @@ fun RagModeSelector(
                 },
                 color = MaterialTheme.colorScheme.tertiary
             )
+
+            RagMenuItem(
+                text = "Премиум поиск",
+                subText = "Multi-Query + AI (Slowest)",
+                icon = RagUiUtils.getRagIcon(RagMode.WITH_MULTIQUERY),
+                isSelected = currentMode == RagMode.WITH_MULTIQUERY,
+                onClick = {
+                    onModeSelected(RagMode.WITH_MULTIQUERY)
+                    expanded = false
+                },
+                color = RagUiUtils.getRagColor(RagMode.WITH_MULTIQUERY)
+            )
         }
     }
 }
