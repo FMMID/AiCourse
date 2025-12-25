@@ -4,7 +4,6 @@ import android.util.Log
 import com.example.aicourse.rag.domain.Reranker
 import com.example.aicourse.rag.domain.model.DocumentChunk
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -59,17 +58,19 @@ class OllamaRerankerService(
 
     private suspend fun evaluateRelevance(query: String, text: String): Float {
         val prompt = """
-            Task: Evaluate if the provided Context contains the answer to the Query.
+            Задача: Оцени, насколько Контекст содержит ответ на Запрос.
             
-            Query: "$query"
-            Context: "$text"
+            Запрос: "$query"
+            Контекст: "$text"
             
-            Scoring Rules:
-            1.0 - The Context contains the exact answer to the Query.
-            0.5 - The Context discusses the topic but does not contain the answer.
-            0.1 - The Context is irrelevant.
+            Правила оценки:
+            1.0 - Контекст содержит точный ответ на запрос
+            0.8 - Контекст содержит частичный ответ
+            0.5 - Контекст касается темы, но не содержит ответа
+            0.2 - Контекст слабо связан с запросом
+            0.0 - Контекст не релевантен
             
-            IMPORTANT: Output ONLY the number (e.g., 1.0, 0.5, or 0.1). No explanation.
+            ВАЖНО: Выведи ТОЛЬКО число (например: 1.0, 0.8, 0.5). Без объяснений.
         """.trimIndent()
 
         return try {

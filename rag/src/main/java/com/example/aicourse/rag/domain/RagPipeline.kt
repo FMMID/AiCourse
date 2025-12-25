@@ -86,8 +86,13 @@ class RagPipeline(
             queryEmbedding = queryVector,
             documents = activeKnowledgeBase, // Ищем по загруженным в память чанкам
             limit = candidatesCount,
-            minScore = 0.2f
+            minScore = 0.6f
         )
+        candidates.forEach { doc ->
+            Log.d("RAG", "Score: ${doc.score}, Text: ${doc.text.take(50)}...")
+        }
+
+        Log.d("RAG", "Top score: ${candidates.firstOrNull()?.score}, Worst: ${candidates.lastOrNull()?.score}")
 
         Log.d("RagPipeline", "Stage 1 (Vector): Found ${candidates.size} candidates")
 

@@ -8,8 +8,8 @@ import com.example.aicourse.domain.utils.ResourceReader
 import com.example.aicourse.rag.domain.model.DocumentChunk
 
 class RagAssistantPrompt(
-    override val temperature: Float = 0.7f,
-    override val topP: Float = 0.1f,
+    override val temperature: Float = 0.6f,
+    override val topP: Float = 0.2f,
     override val maxTokens: Int = 1024,
 ) : DynamicSystemPrompt<PlainTextResponse> {
 
@@ -19,17 +19,18 @@ class RagAssistantPrompt(
         val rawTemplate = ResourceReader.readRawResource(context, R.raw.rag_system_prompt)
 
         val formattedContext = if (ragDocumentChunks.isNotEmpty()) {
-            ragDocumentChunks.joinToString(separator = "\n\n") { chunk ->
+            ragDocumentChunks.mapIndexed { index, chunk ->
                 """
-                [Источник: ${chunk.source}]
+                [${index + 1}] Источник: ${chunk.source}
                 ${chunk.text}
                 """.trimIndent()
-            }
+            }.joinToString(separator = "\n\n")
         } else {
             "Контекст отсутствует."
         }
 
-        return rawTemplate.replace("{{CONTEXT}}", formattedContext) }
+        return rawTemplate.replace("{{CONTEXT}}", formattedContext)
+    }
 
     override fun matches(message: String): Boolean = true
 

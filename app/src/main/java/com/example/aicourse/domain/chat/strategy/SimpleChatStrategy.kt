@@ -208,7 +208,7 @@ class SimpleChatStrategy(
             val useReranker = (chatStateModel.ragMode == RagMode.WITH_RERANKER)
             val ragDocuments = ragPipeline.retrieve(
                 query = content,
-                limit = 3,
+                limit = 5,
                 useReranker = useReranker
             )
             matchedPrompt.ragDocumentChunks = ragDocuments
