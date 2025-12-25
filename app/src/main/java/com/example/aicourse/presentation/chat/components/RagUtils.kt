@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -16,6 +17,7 @@ object RagUiUtils {
         RagMode.DISABLED -> MaterialTheme.colorScheme.onSurfaceVariant
         RagMode.STANDARD -> MaterialTheme.colorScheme.primary
         RagMode.WITH_RERANKER -> MaterialTheme.colorScheme.tertiary
+        RagMode.WITH_MULTIQUERY -> MaterialTheme.colorScheme.secondary
     }
 
     @Composable
@@ -23,5 +25,6 @@ object RagUiUtils {
         RagMode.DISABLED -> Icons.AutoMirrored.Outlined.LibraryBooks
         RagMode.STANDARD -> Icons.AutoMirrored.Filled.LibraryBooks
         RagMode.WITH_RERANKER -> Icons.Rounded.AutoAwesome
+        RagMode.WITH_MULTIQUERY -> Icons.Rounded.Bolt
     }
 }

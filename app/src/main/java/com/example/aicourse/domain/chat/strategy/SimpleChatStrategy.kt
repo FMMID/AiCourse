@@ -24,6 +24,9 @@ import com.example.aicourse.domain.tools.context.model.ContextWindow
 import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
 import com.example.aicourse.domain.tools.tokenComparePrevious.TokenCompareManager
 import com.example.aicourse.rag.domain.RagPipeline
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 class SimpleChatStrategy(
@@ -35,6 +38,15 @@ class SimpleChatStrategy(
 ) : ChatStrategy {
 
     override var chatStateModel: ChatStateModel = initChatStateModel
+
+    init {
+        // ВАЖНО: Загружаем активный контекст для RAG pipeline при создании стратегии
+        if (chatStateModel.ragIds.isNotEmpty()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                ragPipeline.loadActiveContext(chatStateModel.ragIds)
+            }
+        }
+    }
 
     private val contextWindowManager = ContextWindowManager(
         // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
@@ -143,7 +155,7 @@ class SimpleChatStrategy(
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
             activeSystemPrompt = initialSystemPrompt,
-            ragIndexId = chatStateModel.ragIndexId,
+            ragIds = chatStateModel.ragIds,
             ragMode = RagMode.DISABLED
         )
     }
@@ -192,12 +204,14 @@ class SimpleChatStrategy(
             prompt.matches(content)
         }
 
-        if (matchedPrompt is RagAssistantPrompt && !chatStateModel.ragIndexId.isNullOrBlank() && chatStateModel.ragMode != RagMode.DISABLED) {
-            val useReranker = (chatStateModel.ragMode == RagMode.WITH_RERANKER)
+        if (matchedPrompt is RagAssistantPrompt && chatStateModel.ragIds.isNotEmpty() && chatStateModel.ragMode != RagMode.DISABLED) {
+            val useReranker = (chatStateModel.ragMode == RagMode.WITH_RERANKER || chatStateModel.ragMode == RagMode.WITH_MULTIQUERY)
+            val useMultiQuery = (chatStateModel.ragMode == RagMode.WITH_MULTIQUERY)
             val ragDocuments = ragPipeline.retrieve(
                 query = content,
-                limit = 3,
-                useReranker = useReranker
+                limit = 5,
+                useReranker = useReranker,
+                useMultiQuery = useMultiQuery
             )
             matchedPrompt.ragDocumentChunks = ragDocuments
         }
@@ -247,7 +261,7 @@ class SimpleChatStrategy(
         contextSummaryInfo: ContextSummaryInfo?
     ): List<Message> {
         return when (chatStateModel.settingsChatModel.historyStrategy) {
-            HistoryStrategy.PAIN -> messageHistory
+            HistoryStrategy.PLAIN -> messageHistory
 
             HistoryStrategy.ONE_MESSAGE -> messageHistory.takeLast(1)
 

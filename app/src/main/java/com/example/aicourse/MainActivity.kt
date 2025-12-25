@@ -54,11 +54,11 @@ fun AiCourseNavHost() {
         // Экран списка RAG
         composable<Screen.RagList> {
             val viewModel: RagViewModel = koinViewModel()
-
             RagScreen(
                 viewModel = viewModel,
-                onIndexSelected = { indexId ->
-                    navController.navigate(Screen.Chat(chatId = MAIN_CHAT_ID, ragIndexId = indexId))
+                onIndexSelected = { idsString ->
+                    // idsString уже содержит "id1,id2", передаем как есть
+                    navController.navigate(Screen.Chat(chatId = MAIN_CHAT_ID, ragIndexIds = idsString))
                 }
             )
         }
@@ -69,13 +69,13 @@ fun AiCourseNavHost() {
 
             // Инжектим ViewModel через Koin с параметрами
             val viewModel: ChatViewModel = koinViewModel {
-                parametersOf(route.chatId, route.ragIndexId)
+                parametersOf(route.chatId, route.ragIndexIds)
             }
 
             ChatScreen(
                 viewModel = viewModel,
                 navController = navController,
-                ragIndexId = route.ragIndexId,
+                ragIndexId = route.ragIndexIds,
             )
         }
 

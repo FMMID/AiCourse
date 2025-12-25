@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -30,6 +31,8 @@ fun RagScreen(
     onIndexSelected: (String) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    val selectionCount = state.selectedIndicesForChat.size
+    val isSelectionMode = selectionCount > 0
 
     if (state.showCreateDialog) {
         CreateIndexDialog(
@@ -44,8 +47,8 @@ fun RagScreen(
                 title = {
                     if (state.selectedIndexName != null) {
                         Text(state.selectedIndexName!!)
-                    } else if (state.chatTargetId != null) {
-                        Text("Выбрано: ${state.chatTargetId}")
+                    } else if (isSelectionMode) {
+                        Text("Выбрано: $selectionCount")
                     } else {
                         Text("Базы знаний RAG")
                     }
@@ -55,28 +58,32 @@ fun RagScreen(
                         IconButton(onClick = { viewModel.onBackToList() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                         }
-                    } else if (state.chatTargetId != null) {
-                        // При выборе тоже можно показать кнопку "Сброс" или просто Назад
+                    } else if (isSelectionMode) {
+                        // Кнопка сброса выбора (Крестик)
                         IconButton(onClick = { viewModel.clearChatSelection() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Снять выделение")
+                            Icon(Icons.Default.Close, contentDescription = "Сбросить выделение")
                         }
                     }
                 }
             )
         },
         floatingActionButton = {
-            if (state.chatTargetId != null) {
+            if (isSelectionMode) {
+                // Кнопка начала чата с несколькими базами
                 ExtendedFloatingActionButton(
                     onClick = {
-                        onIndexSelected("rag_indices/${state.chatTargetId!!}.json")
+                        // Объединяем выбранные индексы в строку через запятую
+                        val joinedIds = state.selectedIndicesForChat.joinToString(",")
+                        onIndexSelected(joinedIds)
                         viewModel.clearChatSelection()
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     icon = { Icon(Icons.AutoMirrored.Filled.Chat, "Chat") },
-                    text = { Text("Начать чат") }
+                    text = { Text("Чат ($selectionCount)") }
                 )
             } else if (state.selectedIndexName == null && !state.isLoading) {
+                // Кнопка создания новой базы (если ничего не выбрано)
                 FloatingActionButton(onClick = { viewModel.showCreateDialog() }) {
                     Icon(Icons.Default.Add, contentDescription = "Создать")
                 }
@@ -94,8 +101,8 @@ fun RagScreen(
                 if (state.selectedIndexName == null) {
                     RagIndexList(
                         indices = state.availableIndices,
-                        selectedId = state.chatTargetId,
-                        onIndexClick = { viewModel.onIndexSelected(it) },
+                        selectedIds = state.selectedIndicesForChat,
+                        onIndexClick = { viewModel.onIndexClicked(it) },
                         onIndexLongClick = { viewModel.onIndexLongClicked(it) },
                         onDeleteClick = { viewModel.deleteIndex(it) }
                     )

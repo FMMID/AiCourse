@@ -97,14 +97,14 @@ class RoomChatLocalDataSource(
             id = id,
             settingsChatModel = SettingsChatModel(
                 currentUseApiImplementation = ApiImplementation.GIGA_CHAT,
-                historyStrategy = HistoryStrategy.ONE_MESSAGE,
+                historyStrategy = HistoryStrategy.PLAIN,
                 outPutDataStrategy = OutPutDataStrategy.None
             ),
             chatMessages = mutableListOf(),
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
             activeSystemPrompt = initActiveUserPrompt,
-            ragIndexId = null,
+            ragIds = emptyList(),
             ragMode = RagMode.DISABLED,
         )
     }

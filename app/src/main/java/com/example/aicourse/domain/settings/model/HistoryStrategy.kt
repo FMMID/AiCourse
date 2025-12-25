@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 enum class HistoryStrategy {
 
     //TODO используем когда учитывается вся история переписки
-    PAIN,
+    PLAIN,
 
     //TODO в этом режиме не отправляем историю, только сообщение пользователя
     ONE_MESSAGE,

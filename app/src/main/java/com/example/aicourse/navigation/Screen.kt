@@ -10,7 +10,7 @@ sealed interface Screen {
     @Serializable
     data class Chat(
         val chatId: String,
-        val ragIndexId: String? = null
+        val ragIndexIds: String? = null
     ) : Screen
 
     @Serializable

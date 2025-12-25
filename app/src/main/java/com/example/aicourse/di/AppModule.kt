@@ -81,10 +81,14 @@ val appModule = module {
         }
     }
 
-    single<ChatStateModel> { (ragIndexId: String?) ->
+    single<ChatStateModel> { (ragIds: List<String>) ->
         runBlocking {
             val cachedState = get<ChatLocalDataSource>().getChatState(MAIN_CHAT_ID)
-            ragIndexId?.let { cachedState.copy(ragIndexId = it) } ?: cachedState
+            if (ragIds.isNotEmpty()) {
+                cachedState.copy(ragIds = ragIds)
+            } else {
+                cachedState
+            }
         }
     }
 
@@ -95,8 +99,8 @@ val appModule = module {
     }
 
     // ChatRepository
-    single<ChatRepository> { (ragIndexId: String?) ->
-        val stateModel = get<ChatStateModel>() { parametersOf(ragIndexId) }
+    factory<ChatRepository> { (ragIds: List<String>) ->
+        val stateModel = get<ChatStateModel>() { parametersOf(ragIds) }
         val apiImpl = stateModel.settingsChatModel.currentUseApiImplementation
         val remoteDataSource = get<BaseChatRemoteDataSource> { parametersOf(apiImpl) }
 
@@ -104,36 +108,42 @@ val appModule = module {
     }
 
     // --- Strategies ---
-    single<ChatStrategy> { (ragIndexId: String?) ->
+    factory<ChatStrategy> { (ragIds: List<String>) ->
         SimpleChatStrategy(
-            initChatStateModel = get<ChatStateModel>() { parametersOf(ragIndexId) },
+            initChatStateModel = get<ChatStateModel>() { parametersOf(ragIds) },
             applicationContext = androidContext(),
             contextRepository = get<ContextRepository>(),
             initialSystemPrompt = initActiveUserPrompt,
-            ragPipeline = get<RagPipeline> { parametersOf(ragIndexId) }
+            ragPipeline = get<RagPipeline>() // RagPipeline внутри один, но стратегия загрузит в него нужные базы
         )
     }
 
     // --- Use Cases ---
     // UseCases обычно легкие и не хранят состояние, поэтому factory
-    factory<SendMessageChatUseCase> { (ragIndexId: String?) ->
+    factory<SendMessageChatUseCase> { (ragIds: List<String>) ->
         SendMessageChatUseCase(
-            chatRepository = get<ChatRepository>() { parametersOf(ragIndexId) },
-            chatStrategy = get<ChatStrategy>() { parametersOf(ragIndexId) }
+            chatRepository = get<ChatRepository>() { parametersOf(ragIds) },
+            chatStrategy = get<ChatStrategy>() { parametersOf(ragIds) }
         )
     }
 
-    factory<ClearHistoryChatUseCase> { (ragIndexId: String?) ->
+    factory<ClearHistoryChatUseCase> { (ragIds: List<String>) ->
         ClearHistoryChatUseCase(
-            chatRepository = get<ChatRepository>() { parametersOf(ragIndexId) },
-            chatStrategy = get<ChatStrategy>() { parametersOf(ragIndexId) }
+            chatRepository = get<ChatRepository>() { parametersOf(ragIds) },
+            chatStrategy = get<ChatStrategy>() { parametersOf(ragIds) }
         )
     }
 
-    factory<GetHistoryChatUseCase> { GetHistoryChatUseCase(chatRepository = get<ChatRepository>()) }
+    factory<GetHistoryChatUseCase> { (ragIds: List<String>) ->
+        GetHistoryChatUseCase(chatRepository = get<ChatRepository>() {
+            parametersOf(
+                ragIds
+            )
+        })
+    }
 
-    factory<SetRagModelUseCase> { (ragIndexId: String?) ->
-        SetRagModelUseCase(chatStrategy = get<ChatStrategy>() { parametersOf(ragIndexId) })
+    factory<SetRagModelUseCase> { (ragIds: List<String>) ->
+        SetRagModelUseCase(chatStrategy = get<ChatStrategy>() { parametersOf(ragIds) })
     }
 
     // --- ViewModels ---
@@ -147,16 +157,18 @@ val appModule = module {
     }
 
     // ChatViewModel
-    // Принимает динамические параметры (chatId, ragIndexId) + UseCases
-    viewModel { (chatId: String, ragIndexId: String?) ->
+    viewModel { (chatId: String, ragIdsString: String?) ->
+        // Парсим строку в список
+        val ragIds = ragIdsString?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+
         ChatViewModel(
             application = androidContext() as Application,
             chatId = chatId,
-            ragIndexId = ragIndexId,
-            sendMessageChatUseCase = get<SendMessageChatUseCase>() { parametersOf(ragIndexId) },
-            clearHistoryChatUseCase = get<ClearHistoryChatUseCase>() { parametersOf(ragIndexId) },
-            getHistoryChatUseCase = get<GetHistoryChatUseCase>(),
-            setRagModelUseCase = get<SetRagModelUseCase> { parametersOf(ragIndexId) }
+            ragIdsString = ragIdsString,
+            sendMessageChatUseCase = get<SendMessageChatUseCase>() { parametersOf(ragIds) },
+            clearHistoryChatUseCase = get<ClearHistoryChatUseCase>() { parametersOf(ragIds) },
+            getHistoryChatUseCase = get<GetHistoryChatUseCase>() { parametersOf(ragIds) },
+            setRagModelUseCase = get<SetRagModelUseCase> { parametersOf(ragIds) }
         )
     }
 }

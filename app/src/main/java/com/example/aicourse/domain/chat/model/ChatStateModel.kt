@@ -14,6 +14,6 @@ data class ChatStateModel(
     var messagesForSendToAi: MutableList<Message>,
     var contextSummaryInfo: ContextSummaryInfo?, //TODO возможно занести под SettingsChatModel.historyStrategy
     var activeSystemPrompt: SystemPrompt<BotResponse>,
-    val ragIndexId: String?,
-    var ragMode: RagMode = if (ragIndexId != null) RagMode.STANDARD else RagMode.DISABLED
+    val ragIds: List<String>,
+    var ragMode: RagMode = if (ragIds.isNotEmpty()) RagMode.STANDARD else RagMode.DISABLED
 )

@@ -17,7 +17,7 @@ import java.util.UUID
 
 class ChatViewModel(
     application: Application,
-    ragIndexId: String?,
+    ragIdsString: String?,
     private val chatId: String,
     private val sendMessageChatUseCase: SendMessageChatUseCase,
     private val clearHistoryChatUseCase: ClearHistoryChatUseCase,
@@ -35,7 +35,7 @@ class ChatViewModel(
                         error = null,
                         activePrompt = chatStateModel.activeSystemPrompt,
                         ragMode = chatStateModel.ragMode,
-                        showRagButton = ragIndexId != null
+                        showRagButton = !ragIdsString.isNullOrBlank()
                     )
                 }
             }
