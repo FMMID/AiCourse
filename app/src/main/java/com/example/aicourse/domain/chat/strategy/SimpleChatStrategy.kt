@@ -259,7 +259,7 @@ class SimpleChatStrategy(
         contextSummaryInfo: ContextSummaryInfo?
     ): List<Message> {
         return when (chatStateModel.settingsChatModel.historyStrategy) {
-            HistoryStrategy.PAIN -> messageHistory
+            HistoryStrategy.PLAIN -> messageHistory
 
             HistoryStrategy.ONE_MESSAGE -> messageHistory.takeLast(1)
 

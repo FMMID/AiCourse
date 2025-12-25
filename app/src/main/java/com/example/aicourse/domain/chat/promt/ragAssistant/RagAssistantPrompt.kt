@@ -16,20 +16,20 @@ class RagAssistantPrompt(
     var ragDocumentChunks: List<DocumentChunk> = emptyList()
 
     override fun loadSystemPrompt(context: Context): String? {
-        val baseSystemPrompt = ResourceReader.readRawResource(context, R.raw.rag_system_prompt)
-        val formattedChunks = ragDocumentChunks.joinToString("\n\n") { chunk ->
-            """
+        val rawTemplate = ResourceReader.readRawResource(context, R.raw.rag_system_prompt)
+
+        val formattedContext = if (ragDocumentChunks.isNotEmpty()) {
+            ragDocumentChunks.joinToString(separator = "\n\n") { chunk ->
+                """
                 [Источник: ${chunk.source}]
-                Текст: ${chunk.text}
-            """.trimIndent()
+                ${chunk.text}
+                """.trimIndent()
+            }
+        } else {
+            "Контекст отсутствует."
         }
 
-        // Инструкция для модели (можно добавить прямо здесь или в txt файле)
-        val citationInstruction = "\n\nИспользуй предоставленный контекст для ответа. " +
-                "В конце ответа ОБЯЗАТЕЛЬНО перечисли источники, которые ты использовал, в формате: 'Источники: [Название файла]'."
-
-        return baseSystemPrompt + citationInstruction + "\n\n=== КОНТЕКСТ ===\n" + formattedChunks
-    }
+        return rawTemplate.replace("{{CONTEXT}}", formattedContext) }
 
     override fun matches(message: String): Boolean = true
 
