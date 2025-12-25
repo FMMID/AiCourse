@@ -7,24 +7,34 @@ import java.util.UUID
 
 class RagPipeline(
     private val embeddingModel: EmbeddingModel,
-    private val vectorStore: VectorStore,
+    private val repository: RagRepository,
+    private val searchEngine: VectorSearchEngine,
     private val textSplitter: TextSplitter,
     private val rerankerService: Reranker
 ) {
 
-    // 1. Загрузка и Индексация
-    suspend fun ingestDocument(fileName: String, content: String): List<DocumentChunk> {
-        // Шаг 1: Разбивка на чанки
-        val rawChunks = textSplitter.split(
-            content,
-            chunkSize = 300,
-            overlap = 20
-        )
+    // Храним активную базу знаний в оперативной памяти для быстрого поиска
+    private var activeKnowledgeBase: List<DocumentChunk> = emptyList()
 
-        // Шаг 2: Генерация эмбеддингов
+    /**
+     * Загружает выбранные источники в память для поиска
+     */
+    suspend fun loadActiveContext(sourceNames: List<String>) {
+        activeKnowledgeBase = repository.loadIndices(sourceNames)
+        Log.d("RagPipeline", "Loaded ${activeKnowledgeBase.size} chunks from sources: $sourceNames")
+    }
+
+    /**
+     * Создание нового индекса из текста и сохранение через репозиторий
+     */
+    suspend fun ingestDocument(fileName: String, content: String): List<DocumentChunk> {
+        // 1. Разбивка
+        val rawChunks = textSplitter.split(content, chunkSize = 300, overlap = 20)
+
+        // 2. Эмбеддинги
         val embeddings = embeddingModel.embedBatch(rawChunks)
 
-        // Шаг 3: Создание документов
+        // 3. Создание объектов (source = имя файла)
         val docs = rawChunks.mapIndexed { index, text ->
             DocumentChunk(
                 id = UUID.randomUUID().toString(),
@@ -34,9 +44,8 @@ class RagPipeline(
             )
         }
 
-        // Шаг 4: Сохранение в индекс
-        vectorStore.addDocuments(docs)
-        vectorStore.saveIndex()
+        // 4. Сохранение через репозиторий (заменяем старый файл, если был)
+        repository.saveIndex(fileName, docs)
 
         return docs
     }
@@ -47,32 +56,32 @@ class RagPipeline(
         limit: Int = 3,
         useReranker: Boolean = false
     ): List<DocumentChunk> {
+        if (activeKnowledgeBase.isEmpty()) {
+            Log.w("RagPipeline", "Knowledge base is empty. Did you call loadActiveContext?")
+            return emptyList()
+        }
+
         val queryVector = embeddingModel.embed(query)
 
-        // ЭТАП 1: Получаем "широкую" выборку кандидатов через векторный поиск.
-        // Берем в 3-5 раз больше, чем нужно в итоге, чтобы было из чего выбирать.
+        // ЭТАП 1: Векторный поиск через SearchEngine
         val candidatesCount = if (useReranker) limit * 5 else limit
 
-        // Используем низкий порог для поиска (0.2), чтобы не потерять потенциально полезное
-        val candidates = vectorStore.search(
+        val candidates = searchEngine.search(
             queryEmbedding = queryVector,
+            documents = activeKnowledgeBase, // Ищем по загруженным в память чанкам
             limit = candidatesCount,
             minScore = 0.2f
         )
 
         Log.d("RagPipeline", "Stage 1 (Vector): Found ${candidates.size} candidates")
 
-        // Если реранкер не нужен или не подключен, возвращаем как есть
-        if (!useReranker) {
-            return candidates.take(limit)
-        }
+        if (!useReranker) return candidates.take(limit)
 
-        // ЭТАП 2: Умная фильтрация через Ollama
-        // Ставим порог 0.6 - только достаточно уверенные ответы
+        // ЭТАП 2: Reranker
         val rankedDocs = rerankerService.rerank(
             query = query,
             documents = candidates,
-            minScore = 0.4f
+            minScore = 0.4f // Повысил порог для качества
         )
 
         Log.d("RagPipeline", "Stage 2 (Reranker): Kept ${rankedDocs.size} documents")

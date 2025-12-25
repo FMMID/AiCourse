@@ -3,6 +3,7 @@ package com.example.aicourse.rag.data
 import android.content.Context
 import com.example.aicourse.rag.domain.RagRepository
 import com.example.aicourse.rag.domain.model.DocumentChunk
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
@@ -41,10 +42,33 @@ class RagRepositoryImp(context: Context) : RagRepository {
 
     override suspend fun deleteIndex(indexName: String): Boolean {
         val file = File(indicesDir, "$indexName.json")
-        return if (file.exists()) {
-            file.delete()
-        } else {
-            false
+        return if (file.exists()) file.delete() else false
+    }
+
+    override suspend fun saveIndex(
+        name: String,
+        chunks: List<DocumentChunk>
+    ) {
+        val safeName = name.replace(".json", "")
+        val file = File(indicesDir, "$safeName.json")
+        val jsonString = json.encodeToString(chunks)
+        file.writeText(jsonString)
+    }
+
+    override suspend fun loadIndices(names: List<String>): List<DocumentChunk> {
+        val combinedChunks = mutableListOf<DocumentChunk>()
+
+        names.forEach { name ->
+            val file = File(indicesDir, "$name.json")
+            if (file.exists()) {
+                try {
+                    val chunks = json.decodeFromString<List<DocumentChunk>>(file.readText())
+                    combinedChunks.addAll(chunks)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
+        return combinedChunks
     }
 }

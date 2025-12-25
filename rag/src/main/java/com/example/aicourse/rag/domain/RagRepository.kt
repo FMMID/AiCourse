@@ -12,4 +12,9 @@ interface RagRepository {
     suspend fun getIndexFile(name: String): File
 
     suspend fun deleteIndex(indexName: String): Boolean
+
+    // Сохранение индекса (списка чанков) в файл
+    suspend fun saveIndex(name: String, chunks: List<DocumentChunk>)
+
+    suspend fun loadIndices(names: List<String>): List<DocumentChunk>
 }
