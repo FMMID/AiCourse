@@ -23,9 +23,40 @@ class RagViewModel(
         loadIndicesList()
     }
 
-    fun onIndexSelected(name: String) {
+    fun onIndexClicked(name: String) {
+        val currentSelection = _uiState.value.selectedIndicesForChat
+
+        if (currentSelection.isNotEmpty()) {
+            // Если режим выбора активен (выбран хотя бы один), обычный клик работает как переключение
+            toggleSelection(name)
+        } else {
+            // Иначе открываем детали индекса
+            openIndexDetails(name)
+        }
+    }
+
+    fun onIndexLongClicked(name: String) {
+        toggleSelection(name)
+    }
+
+    private fun toggleSelection(name: String) {
+        val currentSelection = _uiState.value.selectedIndicesForChat.toMutableSet()
+        if (currentSelection.contains(name)) {
+            currentSelection.remove(name)
+        } else {
+            currentSelection.add(name)
+        }
+        _uiState.value = _uiState.value.copy(selectedIndicesForChat = currentSelection)
+    }
+
+    fun clearChatSelection() {
+        _uiState.value = _uiState.value.copy(selectedIndicesForChat = emptySet())
+    }
+
+    private fun openIndexDetails(name: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = _uiState.value.copy(isLoading = true)
+            // Загружаем контекст только одного файла для просмотра
             ragPipeline.loadActiveContext(listOf(name))
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
@@ -35,27 +66,13 @@ class RagViewModel(
         }
     }
 
-    fun onMultipleIndicesSelected(names: List<String>) {
-        viewModelScope.launch(Dispatchers.IO) {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-
-            ragPipeline.loadActiveContext(names)
-
-            _uiState.value = _uiState.value.copy(isLoading = false)
-        }
-    }
-
     fun onSearchQuery(query: String) {
-        if (query.isBlank()) {
-            return
-        }
+        if (query.isBlank()) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
-                // Поиск теперь идет по тому контексту, который мы загрузили через loadActiveContext
                 val relevantChunks = ragPipeline.retrieve(query)
-
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     processedChunks = relevantChunks
@@ -70,12 +87,12 @@ class RagViewModel(
     }
 
     fun onBackToList() {
-        // Очищаем выбор (можно добавить метод clearActiveContext в pipeline, если нужно освободить память)
         _uiState.value = _uiState.value.copy(
             selectedIndexName = null,
             processedChunks = emptyList(),
             error = null
         )
+        // При возврате обновляем список, вдруг что-то удалилось или добавилось
         loadIndicesList()
     }
 
@@ -93,13 +110,12 @@ class RagViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
                 val content = readFileContent(fileUri)
-                // Ingest возвращает созданные чанки
                 val chunks = ragPipeline.ingestDocument(indexName, content)
 
-                // Сразу делаем активным
+                // Сразу открываем детали созданного
                 ragPipeline.loadActiveContext(listOf(indexName))
-
                 loadIndicesList()
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     selectedIndexName = indexName,
@@ -115,6 +131,12 @@ class RagViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             val success = ragPipeline.deleteIndex(indexName)
             if (success) {
+                // Если удалили то, что было выделено для чата — убираем из выделения
+                if (_uiState.value.selectedIndicesForChat.contains(indexName)) {
+                    val newSelection = _uiState.value.selectedIndicesForChat - indexName
+                    _uiState.value = _uiState.value.copy(selectedIndicesForChat = newSelection)
+                }
+
                 if (_uiState.value.selectedIndexName == indexName) {
                     onBackToList()
                 } else {
@@ -124,20 +146,6 @@ class RagViewModel(
                 _uiState.value = _uiState.value.copy(error = "Не удалось удалить $indexName")
             }
         }
-    }
-
-    fun onIndexLongClicked(indexName: String) {
-        // Если уже выбран этот же элемент - снимаем выделение, иначе выделяем новый
-        val currentTarget = _uiState.value.chatTargetId
-        if (currentTarget == indexName) {
-            clearChatSelection()
-        } else {
-            _uiState.value = _uiState.value.copy(chatTargetId = indexName)
-        }
-    }
-
-    fun clearChatSelection() {
-        _uiState.value = _uiState.value.copy(chatTargetId = null)
     }
 
     private fun loadIndicesList() {

@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RagIndexList(
     indices: List<String>,
-    selectedId: String?,
+    selectedIds: Set<String>,
     onIndexClick: (String) -> Unit,
     onIndexLongClick: (String) -> Unit,
     onDeleteClick: (String) -> Unit
@@ -83,7 +83,7 @@ fun RagIndexList(
             contentPadding = PaddingValues(16.dp)
         ) {
             items(indices) { name ->
-                val isSelected = name == selectedId
+                val isSelected = selectedIds.contains(name)
 
                 // Меняем цвет карточки при выделении
                 val cardColors = if (isSelected) {
@@ -99,7 +99,7 @@ fun RagIndexList(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
-                        .clip(CardDefaults.shape) // Важно для combinedClickable, чтобы ripple не выходил за границы
+                        .clip(CardDefaults.shape)
                         .combinedClickable(
                             onClick = { onIndexClick(name) },
                             onLongClick = { onIndexLongClick(name) }
@@ -114,11 +114,11 @@ fun RagIndexList(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Start
                     ) {
-                        // Меняем иконку при выделении
+                        // Меняем иконку: Галочка если выбрано, Папка если нет
                         Icon(
                             imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.Folder,
                             contentDescription = null,
-                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary,
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(32.dp)
                         )
                         Spacer(modifier = Modifier.width(16.dp))
@@ -152,7 +152,7 @@ private fun RagIndexListPreview() {
             indices = listOf("History_of_Rome", "Kotlin_Docs", "My_Secret_Plans"),
             onIndexClick = {},
             onDeleteClick = {},
-            selectedId = "History_of_Rome",
+            selectedIds = setOf("History_of_Rome"),
             onIndexLongClick = { },
         )
     }
@@ -166,7 +166,7 @@ private fun RagIndexListEmptyPreview() {
             indices = emptyList(),
             onIndexClick = {},
             onDeleteClick = {},
-            selectedId = "112",
+            selectedIds = setOf(),
             onIndexLongClick = { },
         )
     }
