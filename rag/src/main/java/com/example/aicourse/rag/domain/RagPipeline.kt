@@ -14,7 +14,28 @@ class RagPipeline(
 ) {
 
     // Храним активную базу знаний в оперативной памяти для быстрого поиска
-    private var activeKnowledgeBase: List<DocumentChunk> = emptyList()
+    var activeKnowledgeBase: List<DocumentChunk> = emptyList()
+        private set
+
+    suspend fun getAvailableIndices(): List<String> {
+        return repository.getAvailableIndices()
+    }
+
+    suspend fun deleteIndex(indexName: String): Boolean {
+        // 1. Удаляем физически
+        val isDeleted = repository.deleteIndex(indexName)
+
+        // 2. Если удаление успешно, чистим активную память, чтобы не искать по удаленному
+        if (isDeleted) {
+            val oldSize = activeKnowledgeBase.size
+            // Удаляем чанки, у которых source совпадает с удаляемым индексом
+            // (Предполагаем, что source == indexName или имя файла)
+            activeKnowledgeBase = activeKnowledgeBase.filter { it.source != indexName && it.source != "$indexName.json" }
+
+            Log.d("RagPipeline", "Deleted index '$indexName'. Memory cleaned: $oldSize -> ${activeKnowledgeBase.size} chunks")
+        }
+        return isDeleted
+    }
 
     /**
      * Загружает выбранные источники в память для поиска
@@ -28,25 +49,20 @@ class RagPipeline(
      * Создание нового индекса из текста и сохранение через репозиторий
      */
     suspend fun ingestDocument(fileName: String, content: String): List<DocumentChunk> {
-        // 1. Разбивка
         val rawChunks = textSplitter.split(content, chunkSize = 300, overlap = 20)
-
-        // 2. Эмбеддинги
         val embeddings = embeddingModel.embedBatch(rawChunks)
 
-        // 3. Создание объектов (source = имя файла)
         val docs = rawChunks.mapIndexed { index, text ->
             DocumentChunk(
                 id = UUID.randomUUID().toString(),
                 text = text,
-                source = fileName,
+                source = fileName, // Важно сохранять имя файла как source
                 embedding = embeddings[index]
             )
         }
 
-        // 4. Сохранение через репозиторий (заменяем старый файл, если был)
+        // Сохраняем через репозиторий
         repository.saveIndex(fileName, docs)
-
         return docs
     }
 

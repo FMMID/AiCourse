@@ -54,7 +54,6 @@ val ragModule = module {
     viewModel {
         RagViewModel(
             application = androidContext() as Application,
-            ragRepository = get<RagRepository>(),
             ragPipeline = get<RagPipeline>() // Инжектим сразу готовый Pipeline
         )
     }

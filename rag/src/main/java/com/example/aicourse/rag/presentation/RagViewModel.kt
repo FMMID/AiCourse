@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aicourse.rag.domain.RagPipeline
-import com.example.aicourse.rag.domain.RagRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +13,6 @@ import kotlinx.coroutines.withContext
 
 class RagViewModel(
     application: Application,
-    private val ragRepository: RagRepository,
     private val ragPipeline: RagPipeline
 ) : AndroidViewModel(application) {
 
@@ -28,19 +26,11 @@ class RagViewModel(
     fun onIndexSelected(name: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = _uiState.value.copy(isLoading = true)
-
-            // 1. Загружаем активный контекст в Pipeline
-            // Pipeline сам сходит в репозиторий и подготовит данные для поиска
             ragPipeline.loadActiveContext(listOf(name))
-
-            // 2. Получаем "сырые" чанки просто для отображения списка на экране (если нужно)
-            // (Так как activeKnowledgeBase внутри pipeline приватный, можем взять их через репо для UI)
-            val chunksForUi = ragRepository.loadIndices(listOf(name))
-
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 selectedIndexName = name,
-                processedChunks = chunksForUi
+                processedChunks = ragPipeline.activeKnowledgeBase
             )
         }
     }
@@ -57,8 +47,6 @@ class RagViewModel(
 
     fun onSearchQuery(query: String) {
         if (query.isBlank()) {
-            // Если запрос пустой, просто показываем список, который был загружен
-            // (Логика отображения может зависеть от ваших требований UI)
             return
         }
 
@@ -102,17 +90,13 @@ class RagViewModel(
     fun createNewIndex(indexName: String, fileUri: Uri) {
         viewModelScope.launch {
             hideCreateDialog()
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
+            _uiState.value = _uiState.value.copy(isLoading = true)
             try {
                 val content = readFileContent(fileUri)
-                val sourceName = getFileName(fileUri) // Можно использовать indexName или реальное имя файла
-
-                // Используем имя индекса как имя файла для сохранения
-                // Ingest теперь внутри сохраняет через репозиторий
+                // Ingest возвращает созданные чанки
                 val chunks = ragPipeline.ingestDocument(indexName, content)
 
-                // Сразу делаем этот новый файл активным контекстом
+                // Сразу делаем активным
                 ragPipeline.loadActiveContext(listOf(indexName))
 
                 loadIndicesList()
@@ -121,19 +105,15 @@ class RagViewModel(
                     selectedIndexName = indexName,
                     processedChunks = chunks
                 )
-
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Ошибка: ${e.message}"
-                )
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
             }
         }
     }
 
     fun deleteIndex(indexName: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val success = ragRepository.deleteIndex(indexName)
+            val success = ragPipeline.deleteIndex(indexName)
             if (success) {
                 if (_uiState.value.selectedIndexName == indexName) {
                     onBackToList()
@@ -162,9 +142,8 @@ class RagViewModel(
 
     private fun loadIndicesList() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                availableIndices = ragRepository.getAvailableIndices()
-            )
+            val indices = ragPipeline.getAvailableIndices()
+            _uiState.value = _uiState.value.copy(availableIndices = indices)
         }
     }
 
