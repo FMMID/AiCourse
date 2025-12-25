@@ -45,7 +45,7 @@ class ChatStateMapper {
             activeSystemPromptJson = json.encodeToString(domain.activeSystemPrompt),
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis(),
-            ragIndexId = domain.ragIndexId,
+            ragIdsJson = json.encodeToString(domain.ragIds),
             ragMode = domain.ragMode.name
         )
 
@@ -120,7 +120,11 @@ class ChatStateMapper {
                 json.decodeFromString<ContextSummaryInfo>(it)
             },
             activeSystemPrompt = json.decodeFromString(data.chat.activeSystemPromptJson),
-            ragIndexId = data.chat.ragIndexId,
+            ragIds = try {
+                json.decodeFromString<List<String>>(data.chat.ragIdsJson)
+            } catch (e: Exception) {
+                emptyList()
+            },
             ragMode = RagMode.valueOf(data.chat.ragMode)
         )
     }

@@ -104,7 +104,7 @@ class RoomChatLocalDataSource(
             messagesForSendToAi = mutableListOf(),
             contextSummaryInfo = null,
             activeSystemPrompt = initActiveUserPrompt,
-            ragIndexId = null,
+            ragIds = emptyList(),
             ragMode = RagMode.DISABLED,
         )
     }
