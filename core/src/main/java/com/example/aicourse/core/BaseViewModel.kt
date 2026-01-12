@@ -1,4 +1,4 @@
-package com.example.aicourse.presentation.base
+package com.example.aicourse.core
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel

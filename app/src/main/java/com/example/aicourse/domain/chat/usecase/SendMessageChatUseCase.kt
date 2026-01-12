@@ -1,6 +1,6 @@
 package com.example.aicourse.domain.chat.usecase
 
-import com.example.aicourse.domain.base.BaseUseCase
+import com.example.aicourse.core.BaseUseCase
 import com.example.aicourse.domain.chat.model.ComplexBotMessage
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.repository.ChatRepository

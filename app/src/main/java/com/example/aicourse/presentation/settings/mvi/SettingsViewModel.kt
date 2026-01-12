@@ -2,9 +2,9 @@ package com.example.aicourse.presentation.settings.mvi
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.example.aicourse.core.BaseViewModel
 import com.example.aicourse.domain.settings.usecase.GetLocalMcpToolsUseCase
 import com.example.aicourse.domain.settings.usecase.SettingsChatUseCase
-import com.example.aicourse.presentation.base.BaseViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 

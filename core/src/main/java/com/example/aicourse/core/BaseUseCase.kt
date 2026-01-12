@@ -1,4 +1,4 @@
-package com.example.aicourse.domain.base
+package com.example.aicourse.core
 
 interface BaseUseCase<INPUT, OUTPUT> {
 
