@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.promt.pc.PcBuildResponse
+import com.example.aicourse.prompt.pc.PcBuildResponse
 import com.example.aicourse.ui.theme.AiCourseTheme
 
 /**
@@ -56,7 +56,7 @@ fun PcBuildCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (response.isFinalBuild && response.pcBuild != null) {
-                PcBuildContent(pcBuild = response.pcBuild)
+                PcBuildContent(pcBuild = response.pcBuild!!)
             } else {
                 Text(
                     text = response.question ?: response.rawContent,

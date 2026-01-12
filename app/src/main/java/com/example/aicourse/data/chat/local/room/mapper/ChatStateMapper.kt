@@ -8,9 +8,9 @@ import com.example.aicourse.data.chat.local.room.entity.ChatMessageEntity
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.model.RagMode
+import com.example.aicourse.rag.domain.model.RagMode
 import com.example.aicourse.domain.chat.model.TokenUsage
-import com.example.aicourse.domain.chat.promt.BotResponse
+import com.example.aicourse.prompt.BotResponse
 import com.example.aicourse.domain.settings.model.SettingsChatModel
 import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo

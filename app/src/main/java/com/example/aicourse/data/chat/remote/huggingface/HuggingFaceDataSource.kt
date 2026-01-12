@@ -8,8 +8,8 @@ import com.example.aicourse.data.chat.remote.huggingface.model.HfChatCompletionR
 import com.example.aicourse.data.chat.remote.huggingface.model.HfChatMessage
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.ModelType
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
+import com.example.aicourse.prompt.ModelType
 import io.ktor.client.call.body
 import io.ktor.client.request.header
 import io.ktor.client.request.post

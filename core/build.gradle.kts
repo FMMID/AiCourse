@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.aicourse.rag"
+    namespace = "com.example.aicourse.core"
     compileSdk = 36
 
     defaultConfig {

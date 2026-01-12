@@ -1,7 +1,7 @@
 package com.example.aicourse.domain.chat.strategy.model
 
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.prompt.SystemPrompt
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 
 sealed interface DataForSend {

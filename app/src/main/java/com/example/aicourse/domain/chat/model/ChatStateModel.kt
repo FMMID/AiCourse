@@ -1,9 +1,10 @@
 package com.example.aicourse.domain.chat.model
 
-import com.example.aicourse.domain.chat.promt.BotResponse
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.prompt.BotResponse
+import com.example.aicourse.prompt.SystemPrompt
 import com.example.aicourse.domain.settings.model.SettingsChatModel
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
+import com.example.aicourse.rag.domain.model.RagMode
 import kotlinx.serialization.Serializable
 
 @Serializable

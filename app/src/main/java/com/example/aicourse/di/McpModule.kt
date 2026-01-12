@@ -1,6 +1,6 @@
 package com.example.aicourse.di
 
-import com.example.aicourse.data.settings.remote.McpRemoteDataSource
+import com.example.aicourse.mcpclient.data.McpRemoteDataSource
 import com.example.aicourse.di.config.ApiConfig
 import com.example.aicourse.mcpclient.McpClientConfig
 import org.koin.core.qualifier.named
@@ -33,9 +33,4 @@ val mcpModule = module {
     //         McpClientFactory.createMcpClient(get(named("mcpNotificationConfig")))
     //     )
     // }
-
-    // MCP Remote Data Source
-    single<McpRemoteDataSource> {
-        McpRemoteDataSource()
-    }
 }

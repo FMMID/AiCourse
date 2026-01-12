@@ -1,6 +1,6 @@
 package com.example.aicourse.domain.chat.model
 
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.prompt.SystemPrompt
 import com.example.aicourse.domain.tools.ToolResult
 
 //TODO временное решение, потом удалить, как будет нормальное управление состоянием

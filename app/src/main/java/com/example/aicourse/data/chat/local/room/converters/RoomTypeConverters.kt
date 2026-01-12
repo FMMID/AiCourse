@@ -2,12 +2,11 @@ package com.example.aicourse.data.chat.local.room.converters
 
 import androidx.room.TypeConverter
 import com.example.aicourse.domain.chat.model.TokenUsage
-import com.example.aicourse.domain.chat.promt.BotResponse
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.prompt.BotResponse
+import com.example.aicourse.prompt.SystemPrompt
 import com.example.aicourse.domain.settings.model.SettingsChatModel
 import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
-import kotlinx.serialization.encodeToString
 
 /**
  * Room TypeConverters для преобразования сложных типов в String и обратно

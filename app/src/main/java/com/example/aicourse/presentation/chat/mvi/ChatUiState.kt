@@ -2,9 +2,9 @@ package com.example.aicourse.presentation.chat.mvi
 
 import androidx.compose.runtime.Immutable
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.RagMode
-import com.example.aicourse.domain.chat.promt.SystemPrompt
-import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
+import com.example.aicourse.rag.domain.model.RagMode
+import com.example.aicourse.prompt.SystemPrompt
+import com.example.aicourse.prompt.plain.PlainTextPrompt
 
 @Immutable
 //TODO переделать на другую модель

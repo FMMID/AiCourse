@@ -1,6 +1,6 @@
 package com.example.aicourse.domain.chat.model
 
-import com.example.aicourse.domain.chat.promt.BotResponse
+import com.example.aicourse.prompt.BotResponse
 import com.example.aicourse.domain.tools.ToolResult
 import kotlinx.serialization.Serializable
 

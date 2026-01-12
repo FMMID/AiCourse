@@ -112,6 +112,7 @@ dependencies {
     implementation(project(":rag"))
     implementation(project(":core"))
     implementation(project(":coretools"))
+    implementation(project(":prompt"))
 
     // Koin
     implementation(libs.koin.android)

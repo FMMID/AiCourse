@@ -1,23 +1,21 @@
 package com.example.aicourse.domain.chat.strategy
 
-import android.content.Context
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.model.RagMode
+import com.example.aicourse.rag.domain.model.RagMode
 import com.example.aicourse.domain.chat.model.SendMessageResult
-import com.example.aicourse.domain.chat.promt.SystemPrompt
-import com.example.aicourse.domain.chat.promt.dynamicModel.DynamicModelPrompt
-import com.example.aicourse.domain.chat.promt.dynamicTemperature.DynamicTemperaturePrompt
-import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
-import com.example.aicourse.domain.chat.promt.ragAssistant.RagAssistantPrompt
+import com.example.aicourse.prompt.SystemPrompt
+import com.example.aicourse.prompt.dynamicModel.DynamicModelPrompt
+import com.example.aicourse.prompt.dynamicTemperature.DynamicTemperaturePrompt
+import com.example.aicourse.prompt.plain.PlainTextPrompt
+import com.example.aicourse.prompt.ragAssistant.RagAssistantPrompt
 import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
 import com.example.aicourse.domain.settings.model.HistoryStrategy
 import com.example.aicourse.domain.settings.model.OutPutDataStrategy
 import com.example.aicourse.domain.settings.model.TokenConsumptionMode
 import com.example.aicourse.domain.tools.Tool
-import com.example.aicourse.domain.tools.context.ContextRepository
 import com.example.aicourse.domain.tools.context.ContextWindowManager
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
@@ -30,8 +28,6 @@ import java.util.UUID
 
 class SimpleChatStrategy(
     initChatStateModel: ChatStateModel,
-    private val applicationContext: Context,
-    private val contextRepository: ContextRepository,
     private val initialSystemPrompt: SystemPrompt<*>,
     private val ragPipeline: RagPipeline,
     // NEW: Инжектируем Tools вместо ручного создания
