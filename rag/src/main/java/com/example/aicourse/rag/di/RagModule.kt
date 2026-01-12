@@ -4,6 +4,7 @@ import android.app.Application
 import com.example.aicourse.rag.data.RagRepositoryImp
 import com.example.aicourse.rag.data.remote.embeddingService.OllamaEmbeddingService
 import com.example.aicourse.rag.data.remote.reranker.OllamaRerankerService
+import com.example.aicourse.rag.di.config.OllamaConfig
 import com.example.aicourse.rag.domain.EmbeddingModel
 import com.example.aicourse.rag.domain.RagPipeline
 import com.example.aicourse.rag.domain.RagRepository
@@ -17,6 +18,9 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val ragModule = module {
+    // Ollama Configuration (убирает хардкод)
+    single { OllamaConfig() }
+
     // Репозиторий данных (файловая система)
     single<RagRepository> { RagRepositoryImp(androidContext()) }
 
@@ -25,15 +29,17 @@ val ragModule = module {
 
     // Внешние сервисы
     single<EmbeddingModel> {
+        val config = get<OllamaConfig>()
         OllamaEmbeddingService(
-            baseUrl = "http://10.0.2.2:11434",
-            modelName = "nomic-embed-text:latest"
+            baseUrl = config.baseUrl,
+            modelName = config.embeddingModelName
         )
     }
     single<Reranker> {
+        val config = get<OllamaConfig>()
         OllamaRerankerService(
-            baseUrl = "http://10.0.2.2:11434",
-            modelName = "qwen2.5:latest"
+            baseUrl = config.baseUrl,
+            modelName = config.rerankerModelName
         )
     }
     single<TextSplitter> { RecursiveTextSplitter() }

@@ -20,7 +20,6 @@ import com.example.aicourse.domain.tools.Tool
 import com.example.aicourse.domain.tools.context.ContextRepository
 import com.example.aicourse.domain.tools.context.ContextWindowManager
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
-import com.example.aicourse.domain.tools.context.model.ContextWindow
 import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
 import com.example.aicourse.domain.tools.tokenComparePrevious.TokenCompareManager
 import com.example.aicourse.rag.domain.RagPipeline
@@ -34,7 +33,11 @@ class SimpleChatStrategy(
     private val applicationContext: Context,
     private val contextRepository: ContextRepository,
     private val initialSystemPrompt: SystemPrompt<*>,
-    private val ragPipeline: RagPipeline
+    private val ragPipeline: RagPipeline,
+    // NEW: Инжектируем Tools вместо ручного создания
+    private val contextWindowManager: ContextWindowManager,
+    private val tokenCompareManager: TokenCompareManager,
+    private val modelInfoManager: ModelInfoManager
 ) : ChatStrategy {
 
     override var chatStateModel: ChatStateModel = initChatStateModel
@@ -48,24 +51,16 @@ class SimpleChatStrategy(
         }
     }
 
-    private val contextWindowManager = ContextWindowManager(
-        // TODO сделать создание ContextWindow под конкретную модель, которая сейчас используется
-        targetContextWindow = ContextWindow(
-            originalLimit = 8000,
-            keepLastMessagesNumber = 1,
-            summaryThreshold = 0.4f
-        ),
-        contextRepository = contextRepository,
-        applicationContext = applicationContext,
-    )
-
+    // Tools теперь инжектируются через конструктор (ToolsModule.kt)
+    // Убрано ручное создание contextWindowManager (было строки 51-60)
+    // Убрано ручное создание в activeTool (было строки 64, 68)
     private val activeTool: Tool<*>? = run {
         when (val outPutStrategy = chatStateModel.settingsChatModel.outPutDataStrategy) {
-            is OutPutDataStrategy.ModelInfo -> ModelInfoManager()
+            is OutPutDataStrategy.ModelInfo -> modelInfoManager
 
             is OutPutDataStrategy.Token -> {
                 when (outPutStrategy.tokenConsumptionMode) {
-                    TokenConsumptionMode.COMPARE_PREVIOUS -> TokenCompareManager()
+                    TokenConsumptionMode.COMPARE_PREVIOUS -> tokenCompareManager
                     TokenConsumptionMode.CONTEXT_MODE -> contextWindowManager
                 }
             }
