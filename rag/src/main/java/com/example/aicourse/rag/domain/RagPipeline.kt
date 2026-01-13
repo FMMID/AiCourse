@@ -50,7 +50,7 @@ class RagPipeline(
      * Создание нового индекса из текста и сохранение через репозиторий
      */
     suspend fun ingestDocument(fileName: String, content: String): List<DocumentChunk> {
-        val rawChunks = textSplitter.split(content, chunkSize = 500, overlap = 100)
+        val rawChunks = textSplitter.split(content, chunkSize = 1000, overlap = 150)
         val embeddings = embeddingModel.embedBatch(rawChunks)
 
         val docs = rawChunks.mapIndexed { index, text ->

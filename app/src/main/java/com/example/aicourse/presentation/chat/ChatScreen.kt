@@ -30,8 +30,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.aicourse.R
-import com.example.aicourse.domain.chat.model.RagMode
-import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
+import com.example.aicourse.rag.domain.model.RagMode
+import com.example.aicourse.prompt.plain.PlainTextPrompt
 import com.example.aicourse.presentation.chat.components.RagModeSelector
 import com.example.aicourse.presentation.chat.components.RagStatusIndicator
 import com.example.aicourse.presentation.chat.message.MessagesList

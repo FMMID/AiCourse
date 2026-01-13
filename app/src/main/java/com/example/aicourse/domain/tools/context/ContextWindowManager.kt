@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.prompt.SystemPrompt
 import com.example.aicourse.domain.tools.Tool
 import com.example.aicourse.domain.tools.ToolResult
 import com.example.aicourse.domain.tools.context.model.ContextInfo

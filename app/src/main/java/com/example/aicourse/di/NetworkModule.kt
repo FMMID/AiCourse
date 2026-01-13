@@ -21,7 +21,9 @@ val networkModule = module {
         when (apiImplementation) {
             ApiImplementation.GIGA_CHAT -> GigaChatDataSource(
                 authorizationKey = apiImplementation.key,
-                mcpClients = emptyList(), // Было: mcpClients (глобальная переменная)
+                mcpClients = listOf(
+                    get(named("mcpGitClient"))
+                ), // Было: mcpClients (глобальная переменная)
                 userId = UserSession.CURRENT_USER_ID
             )
 

@@ -5,7 +5,7 @@ import com.example.aicourse.data.chat.local.RoomChatLocalDataSource
 import com.example.aicourse.data.chat.local.room.ChatDatabase
 import com.example.aicourse.data.chat.local.room.dao.ChatDao
 import com.example.aicourse.data.chat.local.room.mapper.ChatStateMapper
-import com.example.aicourse.domain.chat.promt.ragAssistant.RagAssistantPrompt
+import com.example.aicourse.prompt.ragAssistant.RagAssistantPrompt
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 

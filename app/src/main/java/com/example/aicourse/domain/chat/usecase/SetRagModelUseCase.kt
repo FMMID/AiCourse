@@ -1,7 +1,7 @@
 package com.example.aicourse.domain.chat.usecase
 
-import com.example.aicourse.domain.base.BaseUseCase
-import com.example.aicourse.domain.chat.model.RagMode
+import com.example.aicourse.core.BaseUseCase
+import com.example.aicourse.rag.domain.model.RagMode
 import com.example.aicourse.domain.chat.strategy.ChatStrategy
 
 class SetRagModelUseCase(

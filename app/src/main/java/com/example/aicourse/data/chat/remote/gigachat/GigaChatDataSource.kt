@@ -10,9 +10,9 @@ import com.example.aicourse.data.chat.remote.gigachat.model.GigaFunction
 import com.example.aicourse.data.chat.remote.gigachat.model.TokenResponse
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.ModelType
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.mcpclient.McpClient
+import com.example.aicourse.prompt.ModelType
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.header

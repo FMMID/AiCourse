@@ -1,5 +1,6 @@
 package com.example.aicourse.di
 
+import com.example.aicourse.mcpclient.di.mcpModuleBase
 import org.koin.dsl.module
 
 /**
@@ -23,6 +24,7 @@ val appModule = module {
     includes(
         databaseModule,
         mcpModule,
+        mcpModuleBase,
         networkModule,
         toolsModule,
         repositoryModule,

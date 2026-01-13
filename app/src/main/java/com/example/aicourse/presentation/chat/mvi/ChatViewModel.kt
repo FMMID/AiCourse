@@ -2,15 +2,15 @@ package com.example.aicourse.presentation.chat.mvi
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.example.aicourse.core.BaseViewModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.model.RagMode
-import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
+import com.example.aicourse.rag.domain.model.RagMode
+import com.example.aicourse.prompt.plain.PlainTextPrompt
 import com.example.aicourse.domain.chat.usecase.ClearHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.GetHistoryChatUseCase
 import com.example.aicourse.domain.chat.usecase.SendMessageChatUseCase
 import com.example.aicourse.domain.chat.usecase.SetRagModelUseCase
-import com.example.aicourse.presentation.base.BaseViewModel
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID

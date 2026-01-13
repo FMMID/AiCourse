@@ -15,8 +15,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.aicourse.R
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.promt.json.JsonOutputResponse
-import com.example.aicourse.domain.chat.promt.pc.PcBuildResponse
+import com.example.aicourse.prompt.json.JsonOutputResponse
+import com.example.aicourse.prompt.pc.PcBuildResponse
 import com.example.aicourse.domain.tools.context.model.ContextWindowInfo
 import com.example.aicourse.domain.tools.tokenComparePrevious.model.TokenUsageDiff
 import com.example.aicourse.presentation.chat.message.contextStats.ContextWindowCard

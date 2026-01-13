@@ -23,3 +23,6 @@ rootProject.name = "AiCourse"
 include(":app")
 include(":mcpclient")
 include(":rag")
+include(":coretools")
+include(":core")
+include(":prompt")

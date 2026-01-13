@@ -8,7 +8,7 @@ import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.SendMessageResult
 import com.example.aicourse.domain.chat.model.TokenUsage
-import com.example.aicourse.domain.chat.promt.SystemPrompt
+import com.example.aicourse.prompt.SystemPrompt
 import com.example.aicourse.domain.chat.repository.ChatRepository
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import kotlinx.coroutines.Dispatchers

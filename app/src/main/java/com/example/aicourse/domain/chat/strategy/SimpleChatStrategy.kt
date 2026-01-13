@@ -1,27 +1,27 @@
 package com.example.aicourse.domain.chat.strategy
 
-import android.content.Context
 import com.example.aicourse.domain.chat.model.ChatStateModel
 import com.example.aicourse.domain.chat.model.Message
 import com.example.aicourse.domain.chat.model.MessageType
-import com.example.aicourse.domain.chat.model.RagMode
+import com.example.aicourse.rag.domain.model.RagMode
 import com.example.aicourse.domain.chat.model.SendMessageResult
-import com.example.aicourse.domain.chat.promt.SystemPrompt
-import com.example.aicourse.domain.chat.promt.dynamicModel.DynamicModelPrompt
-import com.example.aicourse.domain.chat.promt.dynamicTemperature.DynamicTemperaturePrompt
-import com.example.aicourse.domain.chat.promt.plain.PlainTextPrompt
-import com.example.aicourse.domain.chat.promt.ragAssistant.RagAssistantPrompt
+import com.example.aicourse.prompt.SystemPrompt
+import com.example.aicourse.prompt.dynamicModel.DynamicModelPrompt
+import com.example.aicourse.prompt.dynamicTemperature.DynamicTemperaturePrompt
+import com.example.aicourse.prompt.plain.PlainTextPrompt
+import com.example.aicourse.prompt.ragAssistant.RagAssistantPrompt
 import com.example.aicourse.domain.chat.strategy.model.DataForReceive
 import com.example.aicourse.domain.chat.strategy.model.DataForSend
 import com.example.aicourse.domain.settings.model.HistoryStrategy
 import com.example.aicourse.domain.settings.model.OutPutDataStrategy
 import com.example.aicourse.domain.settings.model.TokenConsumptionMode
 import com.example.aicourse.domain.tools.Tool
-import com.example.aicourse.domain.tools.context.ContextRepository
 import com.example.aicourse.domain.tools.context.ContextWindowManager
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
 import com.example.aicourse.domain.tools.tokenComparePrevious.TokenCompareManager
+import com.example.aicourse.mcpclient.McpClient
+import com.example.aicourse.prompt.projectAssistant.ProjectAssistantPrompt
 import com.example.aicourse.rag.domain.RagPipeline
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,14 +30,13 @@ import java.util.UUID
 
 class SimpleChatStrategy(
     initChatStateModel: ChatStateModel,
-    private val applicationContext: Context,
-    private val contextRepository: ContextRepository,
     private val initialSystemPrompt: SystemPrompt<*>,
     private val ragPipeline: RagPipeline,
     // NEW: Инжектируем Tools вместо ручного создания
     private val contextWindowManager: ContextWindowManager,
     private val tokenCompareManager: TokenCompareManager,
-    private val modelInfoManager: ModelInfoManager
+    private val modelInfoManager: ModelInfoManager,
+    private val mcpGitClient: McpClient
 ) : ChatStrategy {
 
     override var chatStateModel: ChatStateModel = initChatStateModel
@@ -192,11 +191,26 @@ class SimpleChatStrategy(
         currentPrompt: SystemPrompt<*>,
     ): SystemPrompt<*>? {
         val availablePrompts = listOf(
-            currentPrompt as? RagAssistantPrompt ?: RagAssistantPrompt(),
+            ProjectAssistantPrompt(mcpGitClient),
+            currentPrompt as? RagAssistantPrompt ?: RagAssistantPrompt()
         )
 
         val matchedPrompt = availablePrompts.firstOrNull { prompt ->
             prompt.matches(content)
+        }
+
+        if (matchedPrompt is ProjectAssistantPrompt) {
+            val question = matchedPrompt.extractQuestion(content)
+            if (question.isNotBlank()) {
+                val ragDocuments = ragPipeline.retrieve(
+                    query = question,
+                    limit = 10,
+                    useReranker = true,
+                    useMultiQuery = true
+                )
+                matchedPrompt.ragDocumentChunks = ragDocuments
+            }
+            return matchedPrompt
         }
 
         if (matchedPrompt is RagAssistantPrompt && chatStateModel.ragIds.isNotEmpty() && chatStateModel.ragMode != RagMode.DISABLED) {
@@ -224,6 +238,8 @@ class SimpleChatStrategy(
      */
     private fun prepareMessageForSending(prompt: SystemPrompt<*>, message: String): Message {
         val correctedMessageString = when (prompt) {
+            is ProjectAssistantPrompt -> prompt.extractQuestion(message)
+
             is DynamicTemperaturePrompt -> {
                 prompt.extractAndCleanMessage(message)
             }

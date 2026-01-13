@@ -9,7 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.example.aicourse.domain.chat.model.RagMode
+import com.example.aicourse.rag.domain.model.RagMode
 
 object RagUiUtils {
     @Composable

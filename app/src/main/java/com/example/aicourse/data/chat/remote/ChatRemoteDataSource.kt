@@ -2,7 +2,7 @@ package com.example.aicourse.data.chat.remote
 
 import com.example.aicourse.data.chat.remote.model.ChatResponseData
 import com.example.aicourse.domain.chat.model.Message
-import com.example.aicourse.domain.chat.model.ModelType
+import com.example.aicourse.prompt.ModelType
 
 /**
  * Интерфейс для удаленного источника данных чата

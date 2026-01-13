@@ -107,11 +107,12 @@ dependencies {
     //Notifications
     implementation(libs.firebase.messaging.ktx)
 
-    //MCP client
+    //Features
     implementation(project(":mcpclient"))
-
-    //RAG module
     implementation(project(":rag"))
+    implementation(project(":core"))
+    implementation(project(":coretools"))
+    implementation(project(":prompt"))
 
     // Koin
     implementation(libs.koin.android)

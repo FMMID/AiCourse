@@ -1,8 +1,9 @@
 package com.example.aicourse.di
 
-import com.example.aicourse.data.settings.remote.McpRemoteDataSource
 import com.example.aicourse.di.config.ApiConfig
+import com.example.aicourse.mcpclient.McpClient
 import com.example.aicourse.mcpclient.McpClientConfig
+import com.example.aicourse.mcpclient.McpClientFactory
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
@@ -25,6 +26,12 @@ val mcpModule = module {
         McpClientConfig(get<ApiConfig>().mcpNotificationUrl)
     }
 
+    single(named("mcpGitConfig")) { McpClientConfig(get<ApiConfig>().mcpGitUrl) }
+
+    single<McpClient>(named("mcpGitClient")) {
+        McpClientFactory.createMcpClient(get(named("mcpGitConfig")))
+    }
+
     // MCP Clients (закомментировано в текущем коде, оставляем так)
     // Было глобальными переменными в AppModule.kt:45-49
     // single<List<McpClient>>(named("mcpClients")) {
@@ -33,9 +40,4 @@ val mcpModule = module {
     //         McpClientFactory.createMcpClient(get(named("mcpNotificationConfig")))
     //     )
     // }
-
-    // MCP Remote Data Source
-    single<McpRemoteDataSource> {
-        McpRemoteDataSource()
-    }
 }

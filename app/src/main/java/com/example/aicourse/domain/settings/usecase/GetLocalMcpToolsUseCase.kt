@@ -1,7 +1,7 @@
 package com.example.aicourse.domain.settings.usecase
 
-import com.example.aicourse.domain.base.BaseUseCase
-import com.example.aicourse.domain.settings.repository.McpRepository
+import com.example.aicourse.core.BaseUseCase
+import com.example.aicourse.mcpclient.domain.McpRepository
 import com.example.aicourse.mcpclient.McpClientConfig
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 
