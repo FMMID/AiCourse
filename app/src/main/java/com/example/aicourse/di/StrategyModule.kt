@@ -9,6 +9,7 @@ import com.example.aicourse.domain.chat.strategy.SimpleChatStrategy
 import com.example.aicourse.rag.domain.RagPipeline
 import kotlinx.coroutines.runBlocking
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 /**
@@ -42,7 +43,8 @@ val strategyModule = module {
             // NEW: Инжектируем Tools (вместо ручного создания в SimpleChatStrategy.kt:51-75)
             contextWindowManager = get(),
             tokenCompareManager = get(),
-            modelInfoManager = get()
+            modelInfoManager = get(),
+            mcpGitClient = get(named("mcpGitClient"))
         )
     }
 }

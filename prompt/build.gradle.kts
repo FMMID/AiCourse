@@ -34,4 +34,5 @@ dependencies {
     //Serialization
     implementation(libs.kotlinx.serialization.json)
     implementation(project(":rag"))
+    implementation(project(":mcpclient"))
 }

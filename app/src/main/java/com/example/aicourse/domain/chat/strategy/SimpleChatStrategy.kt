@@ -20,6 +20,8 @@ import com.example.aicourse.domain.tools.context.ContextWindowManager
 import com.example.aicourse.domain.tools.context.model.ContextSummaryInfo
 import com.example.aicourse.domain.tools.modelInfo.ModelInfoManager
 import com.example.aicourse.domain.tools.tokenComparePrevious.TokenCompareManager
+import com.example.aicourse.mcpclient.McpClient
+import com.example.aicourse.prompt.projectAssistant.ProjectAssistantPrompt
 import com.example.aicourse.rag.domain.RagPipeline
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +35,8 @@ class SimpleChatStrategy(
     // NEW: Инжектируем Tools вместо ручного создания
     private val contextWindowManager: ContextWindowManager,
     private val tokenCompareManager: TokenCompareManager,
-    private val modelInfoManager: ModelInfoManager
+    private val modelInfoManager: ModelInfoManager,
+    private val mcpGitClient: McpClient
 ) : ChatStrategy {
 
     override var chatStateModel: ChatStateModel = initChatStateModel
@@ -188,11 +191,26 @@ class SimpleChatStrategy(
         currentPrompt: SystemPrompt<*>,
     ): SystemPrompt<*>? {
         val availablePrompts = listOf(
-            currentPrompt as? RagAssistantPrompt ?: RagAssistantPrompt(),
+            ProjectAssistantPrompt(mcpGitClient),
+            currentPrompt as? RagAssistantPrompt ?: RagAssistantPrompt()
         )
 
         val matchedPrompt = availablePrompts.firstOrNull { prompt ->
             prompt.matches(content)
+        }
+
+        if (matchedPrompt is ProjectAssistantPrompt) {
+            val question = matchedPrompt.extractQuestion(content)
+            if (question.isNotBlank()) {
+                val ragDocuments = ragPipeline.retrieve(
+                    query = question,
+                    limit = 10,
+                    useReranker = true,
+                    useMultiQuery = true
+                )
+                matchedPrompt.ragDocumentChunks = ragDocuments
+            }
+            return matchedPrompt
         }
 
         if (matchedPrompt is RagAssistantPrompt && chatStateModel.ragIds.isNotEmpty() && chatStateModel.ragMode != RagMode.DISABLED) {
@@ -220,6 +238,8 @@ class SimpleChatStrategy(
      */
     private fun prepareMessageForSending(prompt: SystemPrompt<*>, message: String): Message {
         val correctedMessageString = when (prompt) {
+            is ProjectAssistantPrompt -> prompt.extractQuestion(message)
+
             is DynamicTemperaturePrompt -> {
                 prompt.extractAndCleanMessage(message)
             }
